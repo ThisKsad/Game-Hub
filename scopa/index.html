@@ -196,6 +196,33 @@ table.sum{width:100%; border-collapse:collapse; font-variant-numeric:tabular-num
 .seats.teams [data-team]{display:inline-block}
 .seats .team.t0{color:#9a6a12; border-color:#d6b46a} .seats .team.t1{color:#2f5d8a; border-color:#9ab9d6}
 .hint{font-size:14px}
+.sheet input[type=text]{font:inherit; padding:8px 10px; border:1px solid #cdbf9f; border-radius:6px; background:#fffaf0; color:var(--ink); min-width:0}
+.sheet input[type=text]:focus-visible{outline:3px solid var(--brass); outline-offset:1px}
+.online{display:flex; flex-direction:column; gap:8px}
+.online .lbl{font-weight:700; font-size:14px; color:var(--ink)}
+.join{display:flex; gap:8px}
+.join input{flex:1; text-transform:uppercase; letter-spacing:.3em; font-weight:700}
+.err{margin:0; color:var(--wine) !important; font-weight:700; font-size:14px}
+.err:empty{display:none}
+.codebox{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:12px 16px; border:1px dashed #cdbf9f; border-radius:8px; background:#fbf6ea}
+.codebox .actions{flex:none}
+.codebox .btn{white-space:nowrap}
+.codebox b{font-family:var(--display); font-size:40px; letter-spacing:.18em; color:var(--wine); font-variant-numeric:tabular-nums}
+.linktext{word-break:break-all; user-select:all}
+ul.lobby{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px}
+ul.lobby li{display:grid; grid-template-columns:18px minmax(0,1fr) auto auto; gap:8px; align-items:center; padding:8px 10px; border:1px solid #e0d5bb; border-radius:6px; background:#fffaf0}
+ul.lobby li.open .pname{color:var(--ink-soft); font-style:italic}
+ul.lobby .num{font-family:var(--display); font-weight:700; color:var(--wine)}
+ul.lobby .pname{font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.ptags{display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end}
+ul.lobby .team.t0{color:#9a6a12; border-color:#d6b46a} ul.lobby .team.t1{color:#2f5d8a; border-color:#9ab9d6}
+.opp .top{flex-wrap:wrap; row-gap:4px}
+.opp .name{flex:1 1 70px}
+.tag.dark{border-color:#cdbf9f; color:var(--ink-soft)}
+.btn.mini{padding:4px 10px; font-size:13px}
+.btn.light{border-color:var(--brass); color:var(--brass)}
+.opp .btn.mini{align-self:flex-start}
+.toast{position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom, 0px)); transform:translateX(-50%); z-index:40; max-width:min(92vw, 520px); background:var(--cream); color:var(--ink); padding:10px 16px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.4); font-size:15px; text-align:center}
 .rulehint{font-size:14px; color:var(--brass) !important; font-style:italic}
 .seg.grid{display:grid; grid-template-columns:1fr 1fr}
 .cols,.col,.below{display:flex; flex-direction:column; gap:16px; min-width:0}
@@ -363,7 +390,7 @@ function loadSettings(){
   });
   const c=s.custom||{};
   const custom={classic:s.custom?!!c.classic:!!s.classic, ace:['one','eleven','all'].includes(c.ace)?c.ace:'one', teams:s.custom?c.teams!==false:s.teams!==false, free:!!c.free};
-  return {target:s.target===21?21:11, values:s.values!==false, players:[2,3,4].includes(s.players)?s.players:2, mode:MODES[s.mode]?s.mode:'house', custom, seats};
+  return {target:s.target===21?21:11, values:s.values!==false, players:[2,3,4].includes(s.players)?s.players:2, mode:MODES[s.mode]?s.mode:'house', custom, seats, where:s.where==='online'?'online':'local', oname:typeof s.oname==='string'?s.oname.slice(0,16):''};
 }
 function saveSettings(s){ try{ localStorage.setItem('scopa-settings', JSON.stringify(s)); }catch(e){} }
 
@@ -383,7 +410,7 @@ const humans=()=>S.players.map((p,i)=>p.ai?null:i).filter(i=>i!==null);
 const soloHuman=()=>humans().length===1;
 const sideOf=p=>S.players[p].side;
 /* "Du" when you play alone against computers, otherwise the player's name */
-const label=p=>soloHuman()&&!S.players[p].ai?'Du':S.players[p].name;
+const label=p=>(S.online&&ON&&p===ON.seat)?'Du':(soloHuman()&&!S.players[p].ai?'Du':S.players[p].name);
 const isDu=p=>label(p)==='Du';
 function sideLabel(i){
   if(S.teams) return 'Team '+'AB'[i];
@@ -448,6 +475,7 @@ function moveText(p,card,opt){
   return `${who} ${du?'legst':'legt'} ${nm(card)} auf den Tisch.`;
 }
 function play(p,cardId,opt){
+  if(S.online){ if(S.turn===p) onlinePlay(cardId,opt); return; }
   if(S.pending||S.phase!=='play'||S.turn!==p) return;
   const card=S.hand[p].find(c=>c.id===cardId); if(!card) return;
   S.hand[p]=S.hand[p].filter(c=>c.id!==cardId); S.sel=null;
@@ -551,14 +579,16 @@ function aiMove(p){
 }
 /* decides what happens next: computer moves on its own, a human waits (behind the cover screen when several share the device) */
 function proceed(){
+  if(S&&S.online){ onlineProceed(); return; }
   if(!S||ui.menu||S.phase!=='play'||S.pending) return;
   const p=S.turn;
   if(S.players[p].ai){
     later(750,()=>{ if(ui.menu||S.turn!==p||S.pending||S.phase!=='play') return; const m=aiMove(p); play(p,m.card.id,m.opt); });
   }
 }
-const needsCover=()=>S.phase==='play'&&!S.pending&&!ui.menu&&!S.players[S.turn].ai&&humans().length>1&&ui.revealed!==S.turn;
+const needsCover=()=>!S.online&&S.phase==='play'&&!S.pending&&!ui.menu&&!S.players[S.turn].ai&&humans().length>1&&ui.revealed!==S.turn;
 function viewer(){
+  if(S.online) return ON?ON.seat:null;
   const h=humans();
   if(h.length===1) return h[0];
   if(ui.revealed===null) return null;
@@ -568,7 +598,7 @@ function viewer(){
 }
 
 /* ---------- player input ---------- */
-function canAct(){const v=viewer(); return S.phase==='play'&&!S.pending&&!ui.menu&&v!==null&&v===S.turn;}
+function canAct(){const v=viewer(); return S.phase==='play'&&!S.pending&&!ui.menu&&v!==null&&v===S.turn&&!(S.online&&ON&&ON.busy);}
 function selectCard(id){
   if(!canAct()) return;
   const p=S.turn;
@@ -599,6 +629,12 @@ function flash(side){
 function sideChips(side){
   return `<span class="chip">Gesammelt <b>${S.piles[side].length}</b></span><span class="chip ${S.scope[side]?'hot':''}">Scope <b>${S.scope[side]}</b></span>`;
 }
+/* online host only: after 20 s of waiting, a silent player's seat can go to the computer */
+function replaceBtn(p){
+  if(!S.online||!ON||ON.seat!==0||S.phase!=='play'||S.turn!==p||S.players[p].ai||p===ON.seat) return '';
+  if(Date.now()-ON.turnSince<20000) return '';
+  return `<button class="btn mini light" type="button" data-replace="${p}">Computer übernimmt</button>`;
+}
 function seatTag(p){
   const pl=S.players[p], bits=[];
   if(S.teams) bits.push(`<span class="team t${pl.side}">Team ${'AB'[pl.side]}</span>`);
@@ -609,15 +645,16 @@ function render(skipOverlay){
   const st=S.settings, n=N(), v=viewer(), bottom=v!==null?v:S.turn;
   const myTurn=canAct();
 
-  $('score').innerHTML=S.scores.map((x,i)=>`<span class="sc ${S.teams?'t'+i:''}" ${S.teams?`title="${esc(teamMembers(i))}"`:''}><em>${esc(sideLabel(i))}</em><b>${x}</b></span>`).join('<span class="sep">·</span>')+`<small>bis ${st.target}</small>`;
+  $('score').innerHTML=S.phase==='lobby'?'':S.scores.map((x,i)=>`<span class="sc ${S.teams?'t'+i:''}" ${S.teams?`title="${esc(teamMembers(i))}"`:''}><em>${esc(sideLabel(i))}</em><b>${x}</b></span>`).join('<span class="sep">·</span>')+`<small>bis ${st.target}</small>`;
 
   // other seats, in turn order after the bottom seat
   const others=[]; for(let k=1;k<n;k++) others.push((bottom+k)%n);
   $('opps').innerHTML=others.map(p=>`<div class="opp ${S.turn===p&&S.phase==='play'?'active':''}">
-      <div class="top"><span class="name">${esc(label(p))}</span><span class="tags">${seatTag(p)}</span></div>
+      <div class="top"><span class="name">${esc(label(p))}</span><span class="tags">${seatTag(p)}</span></div>${replaceBtn(p)}
       <div class="opp-cards">${S.hand[p].map(()=>'<div class="card back" aria-hidden="true"></div>').join('')||'<span class="none">keine Karten</span>'}</div>
       ${S.teams?'':`<div class="chips">${sideChips(sideOf(p))}</div>`}
     </div>`).join('');
+  $('opps').querySelectorAll('[data-replace]').forEach(b=>b.addEventListener('click',()=>{ b.disabled=true; onlineAction('replace',{seat:+b.dataset.replace}); }));
 
   // table
   const P=S.pending, taken=new Set(P&&P.ids?P.ids:[]);
@@ -676,6 +713,7 @@ function render(skipOverlay){
 function renderOverlay(){
   const ov=$('overlay');
   if(ui.menu){ if(!$('menuForm')){ ov.innerHTML=menuHTML(); bindMenu(); } return; }
+  if(S.online&&S.phase==='lobby'){ ov.innerHTML=lobbyHTML(); bindLobby(); return; }
   if(S.phase==='roundEnd'||S.phase==='gameEnd'){ ov.innerHTML=summaryHTML(); bindSummary(); return; }
   if(needsCover()){ ov.innerHTML=coverHTML(); $('reveal').addEventListener('click',()=>{ui.revealed=S.turn; render();}); $('reveal').focus(); return; }
   ov.innerHTML='';
@@ -703,7 +741,11 @@ function menuHTML(){
   const teamsOn=s.players===4&&rulesOf(s).teams;
   return `<div class="overlay"><form class="sheet menu" id="menuForm">
     <h2>Scopa</h2>
-    <p>Für 2 bis 4 Spieler an einem Gerät. Freie Plätze übernimmt auf Wunsch der Computer.</p>
+    <p>Für 2 bis 4 Spieler, an einem Gerät oder online. Freie Plätze übernimmt auf Wunsch der Computer.</p>
+    <div class="seg where">
+      <label><input type="radio" name="where" id="w-local" ${s.where==='local'||ON?'':''}${s.where!=='online'?'checked':''}><span>An einem Gerät</span></label>
+      <label><input type="radio" name="where" id="w-online" ${s.where==='online'?'checked':''}><span>Online</span></label>
+    </div>
     <div class="cols"><div class="col">
     <div class="field"><span>Spieler</span>
       <div class="seg">${[2,3,4].map(k=>`<label><input type="radio" name="players" id="p${k}" value="${k}" ${s.players===k?'checked':''}><span>${k}</span></label>`).join('')}</div>
@@ -711,6 +753,13 @@ function menuHTML(){
     <div class="field seats ${teamsOn?'teams':''}" id="seats"><span>Plätze in Spielreihenfolge</span>${seatRows}
       <p class="hint" id="teamHint" ${teamsOn?'':'hidden'}>Zu viert spielen Platz 1 und 3 (Team A) gegen Platz 2 und 4 (Team B).</p>
       <p class="hint">Sind mehrere Menschen dabei, wird das Gerät reihum weitergegeben. Vor jedem Zug verdeckt ein Hinweis die Karten.</p>
+    </div>
+    <div class="field online" id="onlineBox" ${s.where==='online'?'':'hidden'}><span>Online spielen</span>
+      <label class="lbl" for="oname">Dein Name</label>
+      <input type="text" id="oname" maxlength="16" value="${esc(s.oname||(s.seats[0].ai?'':s.seats[0].name))}" autocomplete="nickname">
+      <p class="hint">Jeder spielt am eigenen Gerät. Erstelle einen Raum mit Spielerzahl und Modus von hier, oder tritt mit dem Code eines Mitspielers bei.</p>
+      <div class="join"><input type="text" id="ocode" maxlength="4" placeholder="Code" value="${esc(ui.joinCode||'')}" autocapitalize="characters" autocomplete="off" aria-label="Raum-Code"><button class="btn" type="button" id="ojoin">Beitreten</button></div>
+      <p class="err" id="oerr" role="alert"></p>
     </div>
     </div><div class="col">
     <div class="field"><span>Spielmodus</span>
@@ -744,8 +793,9 @@ function menuHTML(){
     <label class="check"><input type="checkbox" id="values" ${ui.values?'checked':''}>
       <span><b>Spielwerte auf den Karten zeigen</b><small>Zeigt bei Ass und Bildkarten den Wert in den freien Ecken (Ass 1, Fante 8, Cavallo 9, Re 10). Gilt sofort, auch im laufenden Spiel.</small></span></label>
     <div class="actions">
+      ${ON?'<button class="btn" type="button" id="leaveOn">Raum verlassen</button>':''}
       ${ui.started?'<button class="btn" type="button" id="resume">Weiterspielen</button>':''}
-      <button class="btn primary" type="submit">${ui.started?'Neues Spiel':'Spiel starten'}</button>
+      <button class="btn primary" type="submit" id="mainSubmit">${s.where==='online'?'Raum erstellen':(ui.started?'Neues Spiel':'Spiel starten')}</button>
     </div>
     <details><summary>Regeln kurz</summary><ul>
       <li>Jeder hat 3 Karten, zu Beginn liegen 4 offen auf dem Tisch.</li>
@@ -761,8 +811,11 @@ function bindMenu(){
   const count=()=>[2,3,4].find(k=>$('p'+k).checked);
   const mode=()=>Object.keys(MODES).find(k=>$('mode-'+k).checked);
   const customRules=()=>({classic:$('classic').checked, ace:$('ace-all').checked?'all':$('ace-eleven').checked?'eleven':'one', teams:$('mteam').checked, free:$('free').checked});
+  const online=()=>$('w-online').checked;
   const sync=()=>{
     const k=count(), m=mode();
+    $('seats').hidden=online(); $('onlineBox').hidden=!online();
+    $('mainSubmit').textContent=online()?'Raum erstellen':(ui.started?'Neues Spiel':'Spiel starten');
     for(let i=0;i<4;i++) $('seat'+i).hidden=i>=k;
     const teamsOn=k===4&&(m==='custom'?$('mteam').checked:MODES[m].teams);
     $('teamHint').hidden=!teamsOn;
@@ -772,6 +825,7 @@ function bindMenu(){
     $('teamsField').hidden=k!==4;
   };
   [2,3,4].forEach(k=>$('p'+k).addEventListener('change',sync));
+  ['w-local','w-online'].forEach(id=>$(id).addEventListener('change',()=>{ sync(); saveSettings({...loadSettings(), where:online()?'online':'local'}); }));
   Object.keys(MODES).forEach(k=>$('mode-'+k).addEventListener('change',sync));
   ['mteam','msolo'].forEach(id=>$(id).addEventListener('change',sync));
   /* computer seats get a computer name; switching back to a human restores "Spieler N" */
@@ -789,16 +843,46 @@ function bindMenu(){
     });
     $('re'+i).addEventListener('click',()=>{ $('name'+i).value=pickName(i); });
   }
-  $('menuForm').addEventListener('submit',e=>{
-    e.preventDefault();
+  const collect=()=>{
     const players=count();
     const seats=[0,1,2,3].map(i=>({name:$('name'+i).value.trim()||DEFAULT_SEATS[i].name, ai:$('ai'+i).value==='1'}));
     if(seats.slice(0,players).every(x=>x.ai)) seats[0].ai=false;
-    const s={target:$('t21').checked?21:11, values:$('values').checked, players, mode:mode(), custom:customRules(), seats};
-    saveSettings(s); ui.menu=false; ui.started=true; ui.values=s.values;
+    return {target:$('t21').checked?21:11, values:$('values').checked, players, mode:mode(), custom:customRules(), seats, where:online()?'online':'local', oname:$('oname').value.trim().slice(0,16)};
+  };
+  const onlineName=()=>{ const n=$('oname').value.trim(); if(!n){ $('oerr').textContent='Trag zuerst deinen Namen ein.'; $('oname').focus(); return null; } return n; };
+  const busy=(on)=>{ ['mainSubmit','ojoin'].forEach(id=>{ if($(id)) $(id).disabled=on; }); };
+  $('menuForm').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const s=collect(); saveSettings(s); ui.values=s.values;
+    if(s.where==='online'){
+      const name=onlineName(); if(!name) return;
+      $('oerr').textContent=''; busy(true);
+      try{
+        const r=await api('create',{name, players:s.players, settings:{mode:s.mode, custom:s.custom, target:s.target}});
+        await enterOnline({code:r.code, roomId:r.roomId, seat:r.seat, token:r.token},{id:r.roomId, version:r.version, state:r.state});
+      }catch(err){ if($('oerr')) $('oerr').textContent=err.message; busy(false); }
+      return;
+    }
+    leaveOnline(true);
+    ui.menu=false; ui.started=true;
     $('overlay').innerHTML='';
     newGame(s);
   });
+  $('ojoin').addEventListener('click',async ()=>{
+    const s=collect(); saveSettings(s);
+    const name=onlineName(); if(!name) return;
+    const code=$('ocode').value.toUpperCase().replace(/[^A-Z]/g,'');
+    if(code.length!==4){ $('oerr').textContent='Der Raum-Code hat vier Buchstaben.'; $('ocode').focus(); return; }
+    $('oerr').textContent=''; busy(true);
+    try{
+      const r=await api('join',{code, name});
+      ui.joinCode='';
+      await enterOnline({code:r.code, roomId:r.roomId, seat:r.seat, token:r.token},{id:r.roomId, version:r.version, state:r.state});
+    }catch(err){ if($('oerr')) $('oerr').textContent=err.message; busy(false); }
+  });
+  $('ocode').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); $('ojoin').click(); } });
+  const lo=$('leaveOn'); if(lo) lo.addEventListener('click',()=>leaveOnline());
+  sync();
   $('values').addEventListener('change',e=>{
     ui.values=e.target.checked;
     saveSettings({...loadSettings(), values:ui.values});
@@ -825,21 +909,237 @@ function summaryHTML(){
       <tfoot><tr><th>Diese Runde</th>${cols.map(i=>`<td>+${m.gained[i]}</td>`).join('')}</tr>
       <tr class="total"><th>Gesamt</th>${cols.map(i=>`<td>${S.scores[i]}</td>`).join('')}</tr></tfoot></table></div>
     ${restNote}${tie}
+    ${S.online&&S.phase==='gameEnd'&&ON&&ON.seat!==0?`<p class="note">${esc(S.players[0].name)} kann eine neue Partie starten.</p>`:''}
     <div class="actions">${S.phase==='gameEnd'
-      ?'<button class="btn" type="button" id="toMenu">Menü</button><button class="btn primary" type="button" id="again">Nochmal spielen</button>'
+      ?(S.online
+        ?'<button class="btn" type="button" id="toMenu">Raum verlassen</button>'+(ON&&ON.seat===0?'<button class="btn primary" type="button" id="again">Nochmal spielen</button>':'')
+        :'<button class="btn" type="button" id="toMenu">Menü</button><button class="btn primary" type="button" id="again">Nochmal spielen</button>')
       :'<button class="btn primary" type="button" id="next">Nächste Runde</button>'}</div>
   </div></div>`;
 }
 function bindSummary(){
-  const n=$('next'); if(n) n.addEventListener('click',startRound);
-  const a=$('again'); if(a) a.addEventListener('click',()=>newGame(S.settings));
-  const t=$('toMenu'); if(t) t.addEventListener('click',()=>{ui.menu=true; $('overlay').innerHTML=''; render();});
+  const n=$('next'); if(n) n.addEventListener('click',()=>{ if(S.online){ n.disabled=true; onlineAction('next'); } else startRound(); });
+  const a=$('again'); if(a) a.addEventListener('click',()=>{ if(S.online){ a.disabled=true; onlineAction('again'); } else newGame(S.settings); });
+  const t=$('toMenu'); if(t) t.addEventListener('click',()=>{ if(S.online){ leaveOnline(); return; } ui.menu=true; $('overlay').innerHTML=''; render();});
 }
 
 $('menuBtn').addEventListener('click',()=>{ui.menu=true; $('overlay').innerHTML=''; render();});
 
+/* ---------- online (Supabase: server holds the deck, every move is checked there) ---------- */
+const SB_URL='https://dwsieddjvldzurosjdpp.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3c2llZGRqdmxkenVyb3NqZHBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1NDE3NjEsImV4cCI6MjEwNzExNzc2MX0.NyIPiH_MQBNrHQn6Ype0SF8KLMO47FwZhosdoAusYeI';
+const NET_ERR='Keine Verbindung zum Server. Online spielen geht über thisksad.github.io/Game-Hub/scopa/ und braucht Internet.';
+let ON=null;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+function saveSession(){ try{ localStorage.setItem('scopa-online', JSON.stringify(ON?{code:ON.code,roomId:ON.roomId,seat:ON.seat,token:ON.token}:null)); }catch(e){} }
+function loadSession(){ try{ return JSON.parse(localStorage.getItem('scopa-online')); }catch(e){ return null; } }
+const sbHeaders={'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
+async function api(action,body={}){
+  let r;
+  try{ r=await fetch(SB_URL+'/functions/v1/scopa',{method:'POST',headers:sbHeaders,body:JSON.stringify({action,...body})}); }
+  catch(e){ throw new Error(NET_ERR); }
+  const j=await r.json().catch(()=>({error:'Unerwartete Antwort vom Server.'}));
+  if(!r.ok||j.error) throw new Error(j.error||'Serverfehler, bitte nochmal versuchen.');
+  return j;
+}
+async function rest(path,opts={}){
+  let r;
+  try{ r=await fetch(SB_URL+'/rest/v1/'+path,{...opts,headers:sbHeaders}); }
+  catch(e){ throw new Error(NET_ERR); }
+  if(!r.ok) throw new Error('Serverfehler beim Laden.');
+  return r.json();
+}
+async function fetchRoom(code){ const rows=await rest(`scopa_rooms?code=eq.${encodeURIComponent(code)}&select=id,version,state`); return rows[0]||null; }
+async function fetchHand(){
+  const rows=await rest('rpc/scopa_my_hand',{method:'POST',body:JSON.stringify({p_room:ON.roomId,p_token:ON.token})});
+  return rows&&rows[0]?rows[0].cards:null;
+}
+let sbLib=null;
+function loadSupabase(){
+  if(window.supabase&&window.supabase.createClient) return Promise.resolve(window.supabase);
+  if(!sbLib) sbLib=new Promise((res,rej)=>{const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js'; s.onload=()=>res(window.supabase); s.onerror=rej; document.head.appendChild(s);});
+  return sbLib;
+}
+function toast(text){
+  const el=document.createElement('div'); el.className='toast'; el.setAttribute('role','status'); el.textContent=text;
+  document.body.appendChild(el); setTimeout(()=>el.remove(),4200);
+}
+
+async function enterOnline(sess,row){
+  leaveOnline(true);
+  clearTimers();
+  ON={code:sess.code, roomId:sess.roomId||row.id, seat:sess.seat, token:sess.token, version:-1, st:null, hand:[], queue:[], busy:false, turnSince:Date.now()};
+  saveSession();
+  ui.menu=false; ui.started=true; $('overlay').innerHTML='';
+  try{ history.replaceState(null,'','#'+sess.code); }catch(e){}
+  await applyRow(row,false);
+  if(!ON) return;
+  ON.poll=setInterval(async()=>{
+    if(!ON) return;
+    try{ const r=await fetchRoom(ON.code); if(!ON) return; if(!r){ roomGone(); return; } onRow(r); }catch(e){}
+  },3000);
+  loadSupabase().then(lib=>{
+    if(!ON||!lib||!lib.createClient) return;
+    const client=lib.createClient(SB_URL,SB_KEY,{auth:{persistSession:false}});
+    ON.client=client;
+    ON.chan=client.channel('scopa-'+ON.code)
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'scopa_rooms',filter:'code=eq.'+ON.code},p=>onRow(p.new))
+      .subscribe();
+  }).catch(()=>{});
+}
+function leaveOnline(silent){
+  if(!ON) return;
+  const o=ON; ON=null;
+  clearInterval(o.poll); clearTimeout(o.aiTimer); clearTimeout(o.waitTimer);
+  try{ if(o.client&&o.chan) o.client.removeChannel(o.chan); }catch(e){}
+  if(!silent&&o.st&&o.st.status==='lobby') api('leave',{code:o.code,token:o.token}).catch(()=>{});
+  saveSession();
+  try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+  if(!silent){ ui.menu=true; $('overlay').innerHTML=''; newGame(loadSettings()); }
+}
+function roomGone(){ toast('Diesen Raum gibt es nicht mehr.'); leaveOnline(); }
+function seatLost(){ toast('Dein Platz in diesem Raum ist nicht mehr gültig, zum Beispiel weil der Computer ihn übernommen hat.'); leaveOnline(); }
+
+function onRow(row){
+  if(!ON||!row||!row.state) return;
+  if(row.version<=ON.version||ON.queue.some(q=>q.version===row.version)) return;
+  ON.queue.push(row); ON.queue.sort((a,b)=>a.version-b.version);
+  pump();
+}
+async function pump(){
+  if(!ON||ON.pumping) return;
+  ON.pumping=true;
+  try{
+    while(ON&&ON.queue.length){
+      const row=ON.queue.shift();
+      if(row.version<=ON.version) continue;
+      await applyRow(row,true);
+    }
+  } finally { if(ON) ON.pumping=false; }
+}
+async function applyRow(row,animate){
+  const prev=ON.st, st=row.state, la=st.lastAction;
+  if(animate&&prev&&prev.status==='play'&&la&&la.moveNo===(prev.moveNo||0)+1){
+    // show the move on the old table first, then the new state
+    const hand=la.seat===ON.seat?ON.hand.filter(c=>c.id!==la.card.id):ON.hand;
+    const counts=[...prev.handCounts]; counts[la.seat]=Math.max(0,(counts[la.seat]||0)-1);
+    S=buildS({...prev,handCounts:counts},hand);
+    S.pending={p:la.seat,card:la.card,ids:la.taken.length?la.taken.map(c=>c.id):null};
+    S.msg=(st.log&&st.log.length?st.log[st.log.length-1].text:st.msg)||'';
+    render(ui.menu);
+    await sleep(la.seat===ON.seat?500:1200);
+    if(!ON) return;
+    if(la.scopa) flash(st.players[la.seat].side);
+  }
+  if(row.id) ON.roomId=row.id;
+  if(prev&&prev.turn!==st.turn) ON.turnSince=Date.now();
+  ON.st=st; ON.version=row.version;
+  if(ON.nextHand&&ON.nextHand.version===row.version){ ON.hand=ON.nextHand.hand; ON.nextHand=null; }
+  if(st.status==='lobby') ON.hand=[];
+  else if((st.handCounts[ON.seat]||0)!==ON.hand.length){
+    try{ const h=await fetchHand(); if(!ON) return; if(h===null){ seatLost(); return; } ON.hand=h; }catch(e){}
+  }
+  S=buildS(st,ON.hand);
+  render(ui.menu);
+  onlineProceed();
+}
+function buildS(st,hand){
+  const keepSel=S&&S.online&&hand.some(c=>c.id===S.sel)?S.sel:null;
+  const mine=st.status==='play'&&st.turn===ON.seat, sides=st.sides||st.players.length;
+  return {online:true, players:st.players.map((p,i)=>({...p,name:p.name||'Freier Platz',side:p.side??i})), teams:!!st.teams, sides:st.sides,
+    scores:Array.from({length:sides},(_,i)=>(st.scores||[])[i]||0), round:st.round, dealer:st.dealer, turn:st.turn, table:st.table||[],
+    deck:Array(st.deckCount||0).fill(0), hand:st.players.map((_,i)=>i===ON.seat?[...hand]:Array(st.handCounts[i]||0).fill(0)),
+    piles:Array.from({length:sides},(_,i)=>Array((st.pileCounts||[])[i]||0).fill(0)), scope:Array.from({length:sides},(_,i)=>(st.scope||[])[i]||0), phase:st.status,
+    settings:st.settings, log:st.log||[], lastMove:st.lastMove||[], summary:st.summary,
+    msg:(st.msg||'')+(mine?' Du bist dran.':''), sel:keepSel, pending:null};
+}
+async function onlinePlay(cardId,opt){
+  if(!ON||ON.busy) return;
+  ON.busy=true; S.sel=null; render();
+  try{
+    const res=await api('play',{code:ON.code,token:ON.token,card:cardId,take:opt?opt.map(c=>c.id):null});
+    if(!ON) return;
+    ON.nextHand={version:res.version,hand:res.hand};
+    ON.busy=false;
+    onRow({id:ON.roomId,version:res.version,state:res.state});
+  }catch(e){ toast(e.message); if(ON){ ON.busy=false; render(); } }
+}
+async function onlineAction(action,extra={}){
+  if(!ON) return;
+  try{ const r=await api(action,{code:ON.code,token:ON.token,...extra}); if(ON&&r.state) onRow({id:ON.roomId,version:r.version,state:r.state}); }
+  catch(e){ toast(e.message); }
+}
+/* the first human at the table asks the server for computer moves; the others step in if that device went quiet */
+function onlineProceed(){
+  if(!ON||!ON.st) return;
+  const st=ON.st;
+  clearTimeout(ON.aiTimer); clearTimeout(ON.waitTimer);
+  if(st.status==='play'&&st.players[st.turn].ai){
+    const mv=st.moveNo, first=st.players.findIndex(p=>!p.ai);
+    ON.aiTimer=setTimeout(()=>{
+      if(!ON||ON.st.moveNo!==mv||ON.st.status!=='play') return;
+      api('ai',{code:ON.code,moveNo:mv}).then(r=>{ if(ON&&r.state) onRow({id:ON.roomId,version:r.version,state:r.state}); }).catch(()=>{});
+    }, ON.seat===first?800:6000);
+  }
+  if(st.status==='play'&&ON.seat===0&&!st.players[st.turn].ai&&st.turn!==ON.seat){
+    ON.waitTimer=setTimeout(()=>render(ui.menu), Math.max(0,20500-(Date.now()-ON.turnSince)));
+  }
+}
+
+function lobbyHTML(){
+  const st=ON.st, host=ON.seat===0, link=location.origin+location.pathname+'#'+ON.code;
+  const mode=(MODES[st.settings.mode]||MODES.house).name;
+  const rows=st.players.map((p,i)=>{
+    const tags=[];
+    if(i===0) tags.push('<span class="tag dark">Gastgeber</span>');
+    if(i===ON.seat) tags.push('<span class="tag dark">Du</span>');
+    if(p.ai) tags.push('<span class="tag dark">Computer</span>');
+    if(st.players.length===4&&rulesOf(st.settings).teams) tags.push(`<span class="team t${i%2}">Team ${'AB'[i%2]}</span>`);
+    let ctrl='';
+    if(host&&i>0&&(p.open||p.ai)) ctrl=`<button class="btn mini" type="button" data-seat="${i}" data-ai="${p.open?1:0}">${p.open?'Computer':'Freigeben'}</button>`;
+    return `<li class="${p.open?'open':''}"><span class="num">${i+1}</span><span class="pname">${p.open?'Freier Platz':esc(p.name)}</span><span class="ptags">${tags.join('')}</span>${ctrl}</li>`;
+  }).join('');
+  const open=st.players.filter(p=>p.open).length;
+  return `<div class="overlay"><div class="sheet" role="dialog" aria-label="Warteraum">
+    <h2>Warteraum</h2>
+    <p>Teile den Code oder den Link mit deinen Mitspielern. Sie öffnen das Spiel, wählen „Online“ und treten bei.</p>
+    <div class="codebox"><b id="roomCode">${ON.code}</b><div class="actions"><button class="btn" type="button" id="copyCode">Code kopieren</button><button class="btn" type="button" id="copyLink">Link kopieren</button></div></div>
+    <p class="hint linktext" id="linkText">${esc(link)}</p>
+    <div class="field"><span>Plätze · ${esc(mode)} · bis ${st.settings.target}</span><ul class="lobby">${rows}</ul></div>
+    ${host?`<p class="hint">${open?`Noch ${open} ${open===1?'Platz':'Plätze'} frei. Beim Start übernimmt dort der Computer.`:'Alle Plätze sind besetzt.'}</p>`:`<p class="hint">Warten, bis ${esc(st.players[0].name)} das Spiel startet.</p>`}
+    <div class="actions"><button class="btn" type="button" id="leaveRoom">Raum verlassen</button>${host?'<button class="btn primary" type="button" id="startRoom">Spiel starten</button>':''}</div>
+  </div></div>`;
+}
+function bindLobby(){
+  const copy=(text,label)=>{
+    const done=()=>toast(label+' kopiert.');
+    try{ navigator.clipboard.writeText(text).then(done,()=>selectText()); }catch(e){ selectText(); }
+  };
+  const selectText=()=>{ const el=$('linkText'); const r=document.createRange(); r.selectNodeContents(el); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast('Link markiert, jetzt kopieren.'); };
+  $('copyCode').addEventListener('click',()=>copy(ON.code,'Code'));
+  $('copyLink').addEventListener('click',()=>copy(location.origin+location.pathname+'#'+ON.code,'Link'));
+  $('leaveRoom').addEventListener('click',()=>leaveOnline());
+  const s=$('startRoom'); if(s) s.addEventListener('click',()=>{ s.disabled=true; onlineAction('start').finally(()=>{ if($('startRoom')) $('startRoom').disabled=false; }); });
+  document.querySelectorAll('[data-seat]').forEach(b=>b.addEventListener('click',()=>{ b.disabled=true; onlineAction('seat',{seat:+b.dataset.seat,ai:b.dataset.ai==='1'}); }));
+}
+async function tryResume(){
+  const sess=loadSession();
+  if(!sess||!sess.code||!sess.token) return false;
+  try{
+    const row=await fetchRoom(sess.code);
+    if(!row||row.id!==sess.roomId){ ON=null; saveSession(); return false; }
+    await enterOnline(sess,row);
+    return !!ON;
+  }catch(e){ return false; }
+}
+
 /* ---------- boot (keeps a running game across page updates) ---------- */
 function start(data){
+  const hash=(location.hash||'').replace('#','').toUpperCase();
+  if(/^[A-Z]{4}$/.test(hash)){ ui.joinCode=hash; saveSettings({...loadSettings(), where:'online'}); }
+  if(data&&data.S&&data.S.online) data={};
+  tryResume();
   if(data&&data.S&&data.S.players){
     S=data.S; ui={...ui,...(data.ui||{})};
     if(ui.values===undefined) ui.values=loadSettings().values;
@@ -847,7 +1147,7 @@ function start(data){
     render(); proceed();
   } else { newGame(loadSettings()); }
 }
-window.claude?.hot?.snapshot?.(()=>({S,ui}));
+window.claude?.hot?.snapshot?.(()=>({S:S&&S.online?null:S,ui}));
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 </script>
 
