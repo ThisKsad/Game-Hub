@@ -260,6 +260,58 @@ ul.lobby .team.t0{color:#9a6a12; border-color:#d6b46a} ul.lobby .team.t1{color:#
   .hand{gap:8px}
   .brand{font-size:20px}
 }
+/* the whole table fits on one screen: card sizes follow the screen height as well as its width */
+:root{
+  --cw-main:clamp(40px, min(14.5vw, 11vh), 82px);
+  --cw-hand:clamp(48px, min(19vw, 13.5vh), 106px);
+  --cw-pile:clamp(26px, min(9vw, 6.5vh), 48px);
+  --cw-opp:clamp(18px, min(6.5vw, 4.6vh), 34px);
+}
+@supports (height:1dvh){
+  :root{
+    --cw-main:clamp(40px, min(14.5vw, 11dvh), 82px);
+    --cw-hand:clamp(48px, min(19vw, 13.5dvh), 106px);
+    --cw-pile:clamp(26px, min(9vw, 6.5dvh), 48px);
+    --cw-opp:clamp(18px, min(6.5vw, 4.6dvh), 34px);
+  }
+}
+.app{height:100%; min-height:0; gap:clamp(6px, 1.4vh, 12px); padding-block:clamp(6px, 1.4vh, 12px)}
+.table{--cw:var(--cw-main); flex:1 1 0; min-height:calc(var(--cw) * 1.53 + 28px); overflow:auto}
+.table.crowded{--cw:calc(var(--cw-main) * .82)}
+.opp{padding:6px 10px; gap:4px}
+.opp .back{--cw:var(--cw-opp)}
+.opp .cpile{--pw:var(--cw-opp)}
+.opp-right{display:flex; align-items:center; gap:6px}
+.chip.mini{font-size:11px; padding:1px 7px}
+.hand{padding-top:6px}
+.opts{min-height:38px}
+header,.opps,.msg,.opts,.handrow,.zone{flex:none}
+/* many choices: one row that scrolls sideways instead of pushing the hand off screen */
+.opts.many{flex-wrap:nowrap; overflow-x:auto; justify-content:flex-start; padding-bottom:4px; scrollbar-width:thin}
+.opts.many p{width:auto; flex:none; white-space:nowrap}
+.opts.many .btn{flex:none; white-space:nowrap}
+@media (max-width:600px){
+  header{flex-wrap:nowrap; gap:8px}
+  .brand{font-size:18px; letter-spacing:.08em}
+  .score{flex:1; min-width:0; overflow:hidden; flex-wrap:nowrap; justify-content:safe center; gap:5px}
+  .score.many{gap:3px}
+  .score.many em{max-width:3.2ch; letter-spacing:0}
+  .score.many b{font-size:16px}
+  .score em{max-width:7ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px}
+  .score b{font-size:18px}
+  .score small{display:none}
+  #menuBtn{padding:5px 10px}
+  .opps{grid-template-columns:repeat(auto-fit, minmax(98px, 1fr)); gap:6px}
+  .opp{padding:5px 8px}
+  .opp .tag.ai{display:none}
+  .team .long{display:none}
+  .opp .name{font-size:14px}
+  .opp-cards{gap:0}
+  .opp-cards .card + .card{margin-left:calc(var(--cw-opp) * -.3)}
+  .msg{font-size:14px; line-height:1.3}
+  .opts p{font-size:13px}
+  .modechip,.teamchip{display:none}
+}
 @media (prefers-reduced-motion:reduce){
   *{animation:none !important; transition:none !important}
 }
@@ -686,22 +738,22 @@ function replaceBtn(p){
 }
 function seatTag(p){
   const pl=S.players[p], bits=[];
-  if(S.teams) bits.push(`<span class="team t${pl.side}">Team ${'AB'[pl.side]}</span>`);
-  if(pl.ai) bits.push('<span class="tag">Computer</span>');
+  if(S.teams) bits.push(`<span class="team t${pl.side}"><span class="long">Team </span>${'AB'[pl.side]}</span>`);
+  if(pl.ai) bits.push('<span class="tag ai">Computer</span>');
   return bits.join('');
 }
 function render(skipOverlay){
   const st=S.settings, n=N(), v=viewer(), bottom=v!==null?v:S.turn;
   const myTurn=canAct();
 
+  $('score').classList.toggle('many', S.scores.length>2);
   $('score').innerHTML=S.phase==='lobby'?'':S.scores.map((x,i)=>`<span class="sc ${S.teams?'t'+i:''}" ${S.teams?`title="${esc(teamMembers(i))}"`:''}><em>${esc(sideLabel(i))}</em><b>${x}</b></span>`).join('<span class="sep">·</span>')+`<small>bis ${st.target}</small>`;
 
   // other seats, in turn order after the bottom seat
   const others=[]; for(let k=1;k<n;k++) others.push((bottom+k)%n);
   $('opps').innerHTML=others.map(p=>`<div data-seat="${p}" class="opp ${S.turn===p&&S.phase==='play'?'active':''}">
       <div class="top"><span class="name">${esc(label(p))}</span><span class="tags">${seatTag(p)}</span></div>${replaceBtn(p)}
-      <div class="opp-body"><div class="opp-cards">${S.hand[p].map(()=>'<div class="card back" aria-hidden="true"></div>').join('')||'<span class="none">keine Karten</span>'}</div>${pileHTML(sideOf(p))}</div>
-      ${S.teams?'':`<div class="chips">${sideChips(sideOf(p))}</div>`}
+      <div class="opp-body"><div class="opp-cards">${S.hand[p].map(()=>'<div class="card back" aria-hidden="true"></div>').join('')||'<span class="none">keine Karten</span>'}</div><span class="opp-right">${S.scope[sideOf(p)]?`<span class="chip hot mini">Scope <b>${S.scope[sideOf(p)]}</b></span>`:''}${pileHTML(sideOf(p))}</span></div>
     </div>`).join('');
   $('opps').querySelectorAll('[data-replace]').forEach(b=>b.addEventListener('click',()=>{ b.disabled=true; onlineAction('replace',{seat:+b.dataset.replace}); }));
 
@@ -716,6 +768,7 @@ function render(skipOverlay){
   if(P) html+=cardDiv(P.card,'incoming'+(P.p!==v?' opp':''));
   if(!S.table.length&&!P) html+='<span class="empty">Der Tisch ist leer.</span>';
   $('table').innerHTML=html;
+  $('table').classList.toggle('crowded', S.table.length+(P?1:0)>8);
   $('table').querySelectorAll('.card[data-id]').forEach(el=>el.addEventListener('click',()=>tableClick(el.dataset.id)));
 
   $('msg').textContent=S.msg||'';
@@ -733,7 +786,7 @@ function render(skipOverlay){
   $('myPile').innerHTML=pileHTML(sideOf(bottom))+'<span class="pilelbl">Gesammelt</span>';
   $('meName').innerHTML=`<span class="who">${esc(label(bottom))}</span>${seatTag(bottom)}`;
   const side=sideOf(bottom);
-  $('myChips').innerHTML=(S.teams?`<span class="chip">Team ${'AB'[side]}: ${esc(teamMembers(side))}</span>`:'')+sideChips(side)+`<span class="chip">Modus: ${(MODES[st.mode]||MODES.house).name}</span>`;
+  $('myChips').innerHTML=(S.teams?`<span class="chip teamchip">Team ${'AB'[side]}: ${esc(teamMembers(side))}</span>`:'')+sideChips(side)+`<span class="chip modechip">Modus: ${(MODES[st.mode]||MODES.house).name}</span>`;
 
   // options
   let o='';
@@ -747,6 +800,7 @@ function render(skipOverlay){
     if(blocked.length) o+=`<p class="rulehint">${blocked.length===1?'Die Kombination':'Die Kombinationen'} ${blocked.map(b=>b.map(c=>RANK_NAME[c.v]||c.v).join(' + ')).join(' oder ')} ${blocked.length===1?'ist':'sind'} nicht erlaubt, weil eine passende Einzelkarte auf dem Tisch liegt.</p>`;
   }
   $('opts').innerHTML=o;
+  $('opts').classList.toggle('many', selOpts.length>2);
   $('opts').querySelectorAll('button').forEach(b=>{
     const i=+b.dataset.o, op=selOpts[i];
     b.addEventListener('click',()=>play(S.turn,S.sel,i<0?null:op));
