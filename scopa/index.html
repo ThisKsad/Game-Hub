@@ -210,6 +210,16 @@ const PIPS={1:[[30,46]],2:[[30,25],[30,67]],3:[[30,19],[30,46],[30,73]],4:[[19,2
   5:[[19,22],[41,22],[30,46],[19,70],[41,70]],6:[[19,20],[41,20],[19,46],[41,46],[19,72],[41,72]],
   7:[[19,20],[41,20],[30,33],[19,46],[41,46],[19,72],[41,72]]};
 const SKIN='#e9c6a0', DARK='#4a3b2a', GOLD='#d4a43a', FUR='#fbf7ee', HORSE='#8a5a33', HORSE_D='#5e3b1f';
+const GRIP={D:[0,6],C:[0,5],S:[0,7],B:[2.2,6]};
+/* draws the suit symbol so its grip point sits in the hand at (hx,hy); flip turns it 180° (blade down) */
+function held(s,hx,hy,k,flip){
+  const [gx,gy]=GRIP[s];
+  const cx=flip?hx+gx*k:hx-gx*k, cy=flip?hy+gy*k:hy-gy*k;
+  const g=sym(s,cx,cy,k).replace('<g transform="translate('+cx+','+cy+') scale('+k+')">','<g transform="translate('+cx+','+cy+')'+(flip?' rotate(180)':'')+' scale('+k+')">');
+  /* light halo underneath so the symbol stands out against same-coloured clothing */
+  const halo=g.replace(/ stroke="[^"]*"/g,'').replace(/ stroke-width="[^"]*"/g,'').replace(/fill="[^"]*"/g,'fill="#f6efdf"');
+  return `<g stroke="#f6efdf" stroke-width="2.6" stroke-linejoin="round">${halo}</g>${g}`;
+}
 function figure(c){
   const col=SUIT_COLOR[c.s];
   if(c.v===8) return `
@@ -219,11 +229,12 @@ function figure(c){
     <path d="M23.6,41 h12.8" stroke="${GOLD}" stroke-width="1.8"/>
     <path d="M26,32 L23.5,42" stroke="${col}" stroke-width="3" stroke-linecap="round"/>
     <circle cx="23.4" cy="43" r="1.3" fill="${SKIN}"/>
-    <path d="M34,32 L38.5,36.5" stroke="${SKIN}" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M34,31.5 L36.8,39 L40.2,40.4" stroke="${col}" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
     <circle cx="30" cy="25" r="4.2" fill="${SKIN}"/>
     <path d="M25.3,24 Q29,17.5 35.5,22.5 L36.6,23.6 L25.2,24.4z" fill="${col}"/>
     <path d="M34.5,21.5 Q38,17 40,18.5" stroke="${GOLD}" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-    ${sym(c.s,41.5,38,.62)}`;
+    ${held(c.s,41,40.6,.62)}
+    <circle cx="41" cy="40.6" r="1.4" fill="${SKIN}"/>`;
   if(c.v===9) return `
     <g transform="translate(2,0)">
       <path d="M42,48 Q46.5,52 44,62" stroke="${HORSE_D}" stroke-width="2.4" fill="none" stroke-linecap="round"/>
@@ -242,20 +253,21 @@ function figure(c){
     <circle cx="33" cy="29.3" r="3.6" fill="${SKIN}"/>
     <path d="M29.3,28.6 Q33,22.6 36.8,28.6z" fill="${GOLD}"/>
     <path d="M33,24.5 Q30,20 26.5,22" stroke="${col}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-    ${sym(c.s,41.5,27,.56)}`;
+    ${held(c.s,39.3,30.6,.56)}
+    <circle cx="39.3" cy="30.6" r="1.3" fill="${SKIN}"/>`;
   return `
     <path d="M24,33 h12 l6,32 h-24z" fill="${col}"/>
     <rect x="28.8" y="33" width="2.4" height="29" fill="${FUR}"/>
     <rect x="18" y="61.5" width="24" height="3.6" fill="${FUR}"/>
     <g fill="${DARK}"><circle cx="21" cy="63.3" r=".6"/><circle cx="26" cy="63.3" r=".6"/><circle cx="34" cy="63.3" r=".6"/><circle cx="39" cy="63.3" r=".6"/><circle cx="30" cy="40" r=".6"/><circle cx="30" cy="47" r=".6"/><circle cx="30" cy="54" r=".6"/></g>
     <path d="M23.6,31 Q30,35 36.4,31 L36.4,33.8 Q30,37.6 23.6,33.8z" fill="${FUR}"/>
-    <path d="M35.5,36 L40,42" stroke="${col}" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="40.6" cy="43" r="1.4" fill="${SKIN}"/>
+    <path d="M35.5,36 L42.2,45.6" stroke="${col}" stroke-width="3" stroke-linecap="round"/>
     <circle cx="30" cy="26.5" r="4.2" fill="${SKIN}"/>
     <path d="M26,27.3 Q30,35.5 34,27.3 Q30,30.6 26,27.3z" fill="#7a5a3a"/>
     <path d="M25.3,23.2 L25,16.5 L27.6,19.6 L30,15.6 L32.4,19.6 L35,16.5 L34.7,23.2z" fill="${GOLD}" stroke="#8a6512" stroke-width=".5"/>
     <circle cx="30" cy="20.6" r=".8" fill="${SUIT_COLOR.C}"/>
-    ${sym(c.s,42,47.5,.62)}`;
+    ${held(c.s,42.8,46.4,.62,c.s==='S')}
+    <circle cx="42.8" cy="46.4" r="1.4" fill="${SKIN}"/>`;
 }
 function cardSVG(c){
   const col=SUIT_COLOR[c.s], r=RANK_SHORT[c.v]||c.v, f='font-family="Cinzel, Georgia, serif" font-weight="700"';
