@@ -175,7 +175,10 @@ table.sum{width:100%; border-collapse:collapse; font-variant-numeric:tabular-num
 .team.t1{border-color:var(--team-b); color:var(--team-b)}
 .me{display:flex; gap:8px; align-items:center}
 .hand .back{--cw:var(--cw-main); border-width:3px}
-.seats .seat{display:grid; grid-template-columns:22px 1fr auto auto; gap:8px; align-items:center}
+.seats .seat{display:grid; grid-template-columns:22px minmax(0,1fr) auto auto auto; gap:8px; align-items:center}
+.reroll{font:inherit; font-size:18px; line-height:1; width:36px; height:36px; border:1px solid #cdbf9f; border-radius:6px; background:#fffaf0; color:var(--wine); cursor:pointer}
+.reroll:hover{background:#f3e8d0}
+.reroll:focus-visible{outline:3px solid var(--brass); outline-offset:1px}
 .seats .num{font-family:var(--display); font-weight:700; color:var(--wine); text-align:center}
 .seats input[type=text],.seats select{font:inherit; padding:8px 10px; border:1px solid #cdbf9f; border-radius:6px; background:#fffaf0; color:var(--ink); min-width:0}
 .seats input[type=text]:focus-visible,.seats select:focus-visible{outline:3px solid var(--brass); outline-offset:1px}
@@ -314,13 +317,18 @@ function cardSVG(c){
 const cardDiv=(c,cls='')=>`<div class="card ${cls}" data-id="${c.id}" role="img" aria-label="${nm(c)}">${cardSVG(c)}</div>`;
 
 /* ---------- settings ---------- */
-const DEFAULT_SEATS=[{name:'Spieler 1',ai:false},{name:'Computer',ai:true},{name:'Spieler 3',ai:false},{name:'Spieler 4',ai:false}];
+const COMP_NAMES=['Don Denari','Settebello-Sepp','Primiera-Paolo','Scopatron 3000','Nonna Bytes','Robo Ravioli','Cavallo Calcolo','Re Algoritmo','Mamma Mia 2.0','Bastoni-Bot','Luigi Logik','Signora Silicio'];
+const isCompName=n=>!n||n==='Computer'||COMP_NAMES.includes(n);
+const DEFAULT_SEATS=[{name:'Spieler 1',ai:false},{name:'Don Denari',ai:true},{name:'Spieler 3',ai:false},{name:'Spieler 4',ai:false}];
 function loadSettings(){
   let s={};
   try{ s=JSON.parse(localStorage.getItem('scopa-settings'))||{}; }catch(e){}
   const seats=DEFAULT_SEATS.map((d,i)=>{
     const o=s.seats&&s.seats[i];
-    return {name:(o&&typeof o.name==='string'&&o.name.trim())||d.name, ai:o?!!o.ai:d.ai};
+    const ai=o?!!o.ai:d.ai;
+    let name=(o&&typeof o.name==='string'&&o.name.trim())||d.name;
+    if(ai&&name==='Computer') name=COMP_NAMES[i];
+    return {name, ai};
   });
   return {target:s.target===21?21:11, classic:!!s.classic, values:s.values!==false, players:[2,3,4].includes(s.players)?s.players:2, teams:s.teams!==false, seats};
 }
@@ -637,6 +645,7 @@ function menuHTML(){
       <span class="num">${i+1}</span>
       <input type="text" id="name${i}" value="${esc(seat.name)}" maxlength="16" aria-label="Name Platz ${i+1}">
       <select id="ai${i}" aria-label="Platz ${i+1} besetzt durch"><option value="0" ${seat.ai?'':'selected'}>Mensch</option><option value="1" ${seat.ai?'selected':''}>Computer</option></select>
+      <button type="button" class="reroll" id="re${i}" title="Anderen Namen würfeln" aria-label="Anderen Computernamen würfeln" ${seat.ai?'':'hidden'}>↻</button>
       <span class="team t${i%2}" data-team>${'AB'[i%2]}</span>
     </div>`).join('');
   return `<div class="overlay"><form class="sheet" id="menuForm">
@@ -686,6 +695,21 @@ function bindMenu(){
     $('seats').classList.toggle('teams',teamsOn);
   };
   [2,3,4].forEach(k=>$('p'+k).addEventListener('change',sync));
+  /* computer seats get a computer name; switching back to a human restores "Spieler N" */
+  const pickName=i=>{
+    const used=[0,1,2,3].filter(j=>j!==i).map(j=>$('name'+j).value.trim());
+    const free=COMP_NAMES.filter(n=>!used.includes(n)&&n!==$('name'+i).value.trim());
+    return free[Math.floor(Math.random()*free.length)]||COMP_NAMES[0];
+  };
+  for(let i=0;i<4;i++){
+    $('ai'+i).addEventListener('change',()=>{
+      const ai=$('ai'+i).value==='1', inp=$('name'+i), cur=inp.value.trim();
+      if(ai&&(!cur||/^Spieler \d$/.test(cur))) inp.value=pickName(i);
+      if(!ai&&isCompName(cur)) inp.value='Spieler '+(i+1);
+      $('re'+i).hidden=!ai;
+    });
+    $('re'+i).addEventListener('click',()=>{ $('name'+i).value=pickName(i); });
+  }
   ['mteam','msolo'].forEach(id=>$(id).addEventListener('change',sync));
   $('menuForm').addEventListener('submit',e=>{
     e.preventDefault();
