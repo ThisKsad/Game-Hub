@@ -181,9 +181,13 @@ table.sum{width:100%; border-collapse:collapse; font-variant-numeric:tabular-num
 .team.t1{border-color:var(--team-b); color:var(--team-b)}
 .me{display:flex; gap:8px; align-items:center}
 .hand .back{--cw:var(--cw-main); border-width:3px}
-.seats .seat{display:grid; grid-template-columns:22px minmax(0,1fr) auto auto auto; gap:8px; align-items:center}
+.seats .seat{display:grid; grid-template-columns:18px minmax(0,1fr) 7.4em 36px; gap:8px; align-items:center}
+.seats.teams .seat{grid-template-columns:18px minmax(0,1fr) 7.4em 36px auto}
+.seats select{width:100%}
+@media (max-width:480px){ .seats .seat, .seats.teams .seat{column-gap:6px} .seats .seat{grid-template-columns:16px minmax(0,1fr) 7.3em 34px} .seats.teams .seat{grid-template-columns:16px minmax(0,1fr) 7.3em 34px auto} .seats select{padding-inline:6px} .reroll{width:34px;height:34px} }
 .reroll{font:inherit; font-size:18px; line-height:1; width:36px; height:36px; border:1px solid #cdbf9f; border-radius:6px; background:#fffaf0; color:var(--wine); cursor:pointer}
 .reroll:hover{background:#f3e8d0}
+.reroll.off{visibility:hidden}
 .reroll:focus-visible{outline:3px solid var(--brass); outline-offset:1px}
 .seats .num{font-family:var(--display); font-weight:700; color:var(--wine); text-align:center}
 .seats input[type=text],.seats select{font:inherit; padding:8px 10px; border:1px solid #cdbf9f; border-radius:6px; background:#fffaf0; color:var(--ink); min-width:0}
@@ -194,6 +198,14 @@ table.sum{width:100%; border-collapse:collapse; font-variant-numeric:tabular-num
 .hint{font-size:14px}
 .rulehint{font-size:14px; color:var(--brass) !important; font-style:italic}
 .seg.grid{display:grid; grid-template-columns:1fr 1fr}
+.cols,.col,.below{display:flex; flex-direction:column; gap:16px; min-width:0}
+.below{width:100%; max-width:470px; margin-inline:auto}
+@media (min-width:820px){
+  .sheet.menu{max-width:920px; padding:28px 32px}
+  .cols{display:grid; grid-template-columns:1fr 1fr; gap:32px; align-items:start}
+  .cols .col + .col{border-left:1px solid #e0d5bb; padding-left:32px}
+  .below{border-top:1px solid #e0d5bb; padding-top:18px}
+}
 .custom{display:flex; flex-direction:column; gap:14px; padding:14px; border:1px solid #e0d5bb; border-radius:8px; background:#fbf6ea}
 .radios{display:flex; flex-direction:column; gap:10px}
 .log{margin:0; padding-left:18px; color:var(--ink); display:flex; flex-direction:column; gap:4px; font-size:15px}
@@ -685,13 +697,14 @@ function menuHTML(){
       <span class="num">${i+1}</span>
       <input type="text" id="name${i}" value="${esc(seat.name)}" maxlength="16" aria-label="Name Platz ${i+1}">
       <select id="ai${i}" aria-label="Platz ${i+1} besetzt durch"><option value="0" ${seat.ai?'':'selected'}>Mensch</option><option value="1" ${seat.ai?'selected':''}>Computer</option></select>
-      <button type="button" class="reroll" id="re${i}" title="Anderen Namen würfeln" aria-label="Anderen Computernamen würfeln" ${seat.ai?'':'hidden'}>↻</button>
+      <button type="button" class="reroll ${seat.ai?'':'off'}" id="re${i}" title="Anderen Namen würfeln" aria-label="Anderen Computernamen würfeln" ${seat.ai?'':'tabindex="-1" aria-hidden="true"'}>↻</button>
       <span class="team t${i%2}" data-team>${'AB'[i%2]}</span>
     </div>`).join('');
   const teamsOn=s.players===4&&rulesOf(s).teams;
-  return `<div class="overlay"><form class="sheet" id="menuForm">
+  return `<div class="overlay"><form class="sheet menu" id="menuForm">
     <h2>Scopa</h2>
     <p>Für 2 bis 4 Spieler an einem Gerät. Freie Plätze übernimmt auf Wunsch der Computer.</p>
+    <div class="cols"><div class="col">
     <div class="field"><span>Spieler</span>
       <div class="seg">${[2,3,4].map(k=>`<label><input type="radio" name="players" id="p${k}" value="${k}" ${s.players===k?'checked':''}><span>${k}</span></label>`).join('')}</div>
     </div>
@@ -699,6 +712,7 @@ function menuHTML(){
       <p class="hint" id="teamHint" ${teamsOn?'':'hidden'}>Zu viert spielen Platz 1 und 3 (Team A) gegen Platz 2 und 4 (Team B).</p>
       <p class="hint">Sind mehrere Menschen dabei, wird das Gerät reihum weitergegeben. Vor jedem Zug verdeckt ein Hinweis die Karten.</p>
     </div>
+    </div><div class="col">
     <div class="field"><span>Spielmodus</span>
       <div class="seg grid">${Object.keys(MODES).map(k=>`<label><input type="radio" name="mode" id="mode-${k}" value="${k}" ${s.mode===k?'checked':''}><span>${MODES[k].name}</span></label>`).join('')}</div>
       <p class="hint" id="modeDesc">${MODES[s.mode].desc}</p>
@@ -720,6 +734,8 @@ function menuHTML(){
           <label><input type="radio" name="teams" id="msolo" ${c.teams?'':'checked'}><span>Jeder für sich</span></label>
         </div></div>
     </div>
+    </div></div>
+    <div class="below">
     <div class="field"><span>Gespielt wird bis</span>
       <div class="seg">
         <label><input type="radio" name="target" id="t11" value="11" ${s.target===11?'checked':''}><span>11 Punkte</span></label>
@@ -738,6 +754,7 @@ function menuHTML(){
       <li>Je 1 Punkt für meiste Karten, meiste Denari, Settebello (7 di Denari) und Primiera. Bei Gleichstand gibt es keinen Punkt.</li>
       <li>Werte: Ass 1, 2–7, Fante 8, Cavallo 9, Re 10. Die Modi ändern, was das Ass kann.</li>
     </ul></details>
+    </div>
   </form></div>`;
 }
 function bindMenu(){
@@ -768,7 +785,7 @@ function bindMenu(){
       const ai=$('ai'+i).value==='1', inp=$('name'+i), cur=inp.value.trim();
       if(ai&&(!cur||/^Spieler \d$/.test(cur))) inp.value=pickName(i);
       if(!ai&&isCompName(cur)) inp.value='Spieler '+(i+1);
-      $('re'+i).hidden=!ai;
+      const re=$('re'+i); re.classList.toggle('off',!ai); if(ai){re.removeAttribute('tabindex'); re.removeAttribute('aria-hidden');} else {re.tabIndex=-1; re.setAttribute('aria-hidden','true');}
     });
     $('re'+i).addEventListener('click',()=>{ $('name'+i).value=pickName(i); });
   }
