@@ -241,6 +241,7 @@ ul.lobby .team.t0{color:#9a6a12; border-color:#d6b46a} ul.lobby .team.t1{color:#
 .opp .name{flex:1 1 70px}
 .tag.dark{border-color:#cdbf9f; color:var(--ink-soft)}
 .btn.mini{padding:4px 10px; font-size:13px}
+select.lvl{font:inherit; font-size:13px; padding:4px 6px; border:1px solid #cdbf9f; border-radius:6px; background:#fffaf0; color:var(--ink)}
 .btn.light{border-color:var(--brass); color:var(--brass)}
 .opp .btn.mini{align-self:flex-start}
 .toast{position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom, 0px)); transform:translateX(-50%); z-index:40; max-width:min(92vw, 520px); background:var(--cream); color:var(--ink); padding:10px 16px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.4); font-size:15px; text-align:center}
@@ -408,7 +409,7 @@ de:{
   e_seatTaken:"Auf diesem Platz sitzt schon jemand.", e_noRound:"Gerade läuft keine Runde.", e_notTurn:"Du bist nicht dran.",
   e_noCard:"Diese Karte hast du nicht auf der Hand.", e_badTake:"Diese Karten darfst du mit dieser Karte nicht nehmen.",
   e_mustTake:"Mit dieser Karte musst du etwas vom Tisch nehmen.", e_conflict:"Jemand anderes war schneller. Versuch es gleich nochmal.",
-  e_cantReplace:"Diesen Platz kann der Computer nicht übernehmen.", e_noCode:"Konnte keinen freien Raum-Code finden. Versuch es nochmal."
+  e_cantReplace:"Diesen Platz kann der Computer nicht übernehmen.", compLevel:"Computer · {l}", lvl_easy:"Leicht", lvl_normal:"Normal", lvl_hard:"Schwer", lvl_extreme:"Extrem", e_noCode:"Konnte keinen freien Raum-Code finden. Versuch es nochmal."
 },
 en:{
   you:"You", youObj:"you", team:"Team {x}", teamWord:"Team ", computer:"Computer", menu:"Menu", upTo:"to {n}", noCards:"no cards",
@@ -466,7 +467,7 @@ en:{
   e_seatTaken:"Someone is already in that seat.", e_noRound:"No round is running right now.", e_notTurn:"It's not your turn.",
   e_noCard:"You don't have that card.", e_badTake:"You can't take those cards with this card.",
   e_mustTake:"With this card you have to take something from the table.", e_conflict:"Someone else was faster. Try again in a moment.",
-  e_cantReplace:"The computer can't take over this seat.", e_noCode:"Couldn't find a free room code. Please try again."
+  e_cantReplace:"The computer can't take over this seat.", compLevel:"Computer · {l}", lvl_easy:"Easy", lvl_normal:"Normal", lvl_hard:"Hard", lvl_extreme:"Extreme", e_noCode:"Couldn't find a free room code. Please try again."
 },
 pt:{
   you:"Você", youObj:"você", team:"Time {x}", teamWord:"Time ", computer:"Computador", menu:"Menu", upTo:"até {n}", noCards:"sem cartas",
@@ -524,7 +525,7 @@ pt:{
   e_seatTaken:"Alguém já está nesse lugar.", e_noRound:"Nenhuma rodada em andamento.", e_notTurn:"Não é a sua vez.",
   e_noCard:"Você não tem essa carta.", e_badTake:"Você não pode pegar essas cartas com esta carta.",
   e_mustTake:"Com esta carta você precisa pegar algo da mesa.", e_conflict:"Alguém foi mais rápido. Tente de novo em instantes.",
-  e_cantReplace:"O computador não pode assumir este lugar.", e_noCode:"Não foi possível encontrar um código livre. Tente de novo."
+  e_cantReplace:"O computador não pode assumir este lugar.", compLevel:"Computador · {l}", lvl_easy:"Fácil", lvl_normal:"Normal", lvl_hard:"Difícil", lvl_extreme:"Extremo", e_noCode:"Não foi possível encontrar um código livre. Tente de novo."
 }};
 function detectLang(){
   try{ const s=JSON.parse(localStorage.getItem('scopa-settings'))||{}; if(LANGS[s.lang]) return s.lang; }catch(e){}
@@ -539,6 +540,7 @@ function t(k,v){
   return v?s.replace(/\{(\w+)\}/g,(_,x)=>v[x]!==undefined?v[x]:''):s;
 }
 const DEFAULT_NAME_RE=/^(Spieler|Player|Jogador) \d$/;
+const compLabel=l=>t('compLevel',{l:t('lvl_'+(LEVELS.includes(l)?l:'normal'))});
 const modeName=k=>t({house:'modeHouse',classic:'modeClassic',asso:'modeAsso',custom:'modeCustom'}[k]||'modeHouse');
 const modeDesc=k=>t({house:'modeHouseDesc',classic:'modeClassicDesc',asso:'modeAssoDesc',custom:'modeCustomDesc'}[k]||'modeHouseDesc');
 /* static labels outside the rendered regions */
@@ -670,6 +672,7 @@ const COMP_NAMES=['Don Denari','Settebello-Sepp','Primiera-Paolo','Scopatron 300
 /* names that were in the list before; still recognised so saved seats get a current name */
 const RETIRED=['Computer','Re Algoritmo','Mamma Mia 2.0','Bastoni-Bot','Luigi Logik','Signora Silicio'];
 const isCompName=n=>!n||RETIRED.includes(n)||COMP_NAMES.includes(n);
+const LEVELS=['easy','normal','hard','extreme'];
 const DEFAULT_SEATS=[{name:'Spieler 1',ai:false},{name:'Don Denari',ai:true},{name:'Spieler 3',ai:false},{name:'Spieler 4',ai:false}];
 const defaultName=i=>t('player',{n:i+1});
 const MODES={
@@ -688,7 +691,7 @@ function loadSettings(){
     let name=(o&&typeof o.name==='string'&&o.name.trim())||(d.ai?d.name:defaultName(i));
     if(!ai&&DEFAULT_NAME_RE.test(name)) name=defaultName(i);
     if(ai&&RETIRED.includes(name)) name=COMP_NAMES[i];
-    return {name, ai};
+    return {name, ai, level:o&&LEVELS.includes(o.level)?o.level:'normal'};
   });
   const c=s.custom||{};
   const custom={classic:s.custom?!!c.classic:!!s.classic, ace:['one','eleven','all'].includes(c.ace)?c.ace:'one', teams:s.custom?c.teams!==false:s.teams!==false, free:!!c.free};
@@ -724,7 +727,7 @@ const teamMembers=i=>S.players.filter(p=>p.side===i).map(p=>p.name).join(' + ');
 function newGame(settings){
   clearTimers();
   const R=rulesOf(settings), n=settings.players, teams=n===4&&!!R.teams;
-  const players=settings.seats.slice(0,n).map((s,i)=>({name:s.name.trim()||defaultName(i), ai:!!s.ai, side:teams?i%2:i}));
+  const players=settings.seats.slice(0,n).map((s,i)=>({name:s.name.trim()||defaultName(i), ai:!!s.ai, level:LEVELS.includes(s.level)?s.level:'normal', side:teams?i%2:i}));
   if(players.every(p=>p.ai)) players[0].ai=false;
   const sides=teams?2:n;
   S={players, teams, sides, scores:Array(sides).fill(0), dealer:Math.floor(Math.random()*n), round:0, settings:{...settings,...R}, phase:'play'};
@@ -853,24 +856,174 @@ function endRound(){
 }
 
 /* ---------- computer ---------- */
-function worth(c){let w=1;if(c.s==='D')w+=2;if(c.v===7)w+=3;else if(c.v===6)w+=1.5;else if(c.v===1)w+=1;if(c.s==='D'&&c.v===7)w+=10;return w;}
-function risk(t){if(!t.length)return 0;const sum=t.reduce((s,c)=>s+c.v,0);return sum<=10?7:0;}
-function aiMove(p){
-  const lastPlay=S.deck.length===0&&handTotal()===1;
-  let best=null;
-  const consider=(card,opt,sc)=>{if(!best||sc>best.sc)best={card,opt,sc};};
-  for(const c of S.hand[p]){
-    const opts=options(c,S.table);
-    if(!opts.length){consider(c,null,-worth(c)*1.3-risk([...S.table,c])+Math.random()*.6);continue;}
-    for(const o of opts){
-      const ids=new Set(o.map(x=>x.id)), rest=S.table.filter(x=>!ids.has(x.id));
-      let sc=worth(c)+o.reduce((s,x)=>s+worth(x),0);
-      if(!rest.length&&!lastPlay&&!takesAll(c)) sc+=14;
-      sc-=risk(rest); sc+=Math.random()*.6;
-      consider(c,o,sc);
+/* AI-BEGIN: copy of supabase/functions/scopa/ai.js, keep both the same */
+// Computer opponents for Scopa in four levels: easy, normal, hard, extreme.
+// Used by the online server and, as a copy between the AI markers, by scopa/index.html.
+// G: { players:[{side}], hands:[[card]], table:[card], deck:[card], piles:[[card]] per side, settings, lastSide }
+// optionsFn(card, table) returns the legal captures for that card under the current rules.
+function chooseMove(G, p, level, optionsFn, rnd) {
+  rnd = rnd || Math.random;
+  const R = G.settings || {};
+  const hand = G.hands[p], table = G.table, n = G.players.length;
+  const mySide = G.players[p].side;
+  const handTotal = G.hands.reduce((s, h) => s + h.length, 0);
+  const deckLeft = G.deck.length;
+  const lastPlay = deckLeft === 0 && handTotal === 1;
+  const takesAll = c => c.v === 1 && R.ace === 'all';
+  const sum = cs => cs.reduce((s, c) => s + c.v, 0);
+
+  const moves = [];
+  for (const c of hand) {
+    const opts = optionsFn(c, table);
+    if (opts.length) opts.forEach(o => moves.push({ card: c, opt: o }));
+    else moves.push({ card: c, opt: null });
+  }
+  if (moves.length === 1) return moves[0];
+
+  // easy: takes something whenever it can, otherwise anything; no preferences at all
+  if (level === 'easy') {
+    const caps = moves.filter(m => m.opt);
+    const pool = caps.length ? caps : moves;
+    return pool[Math.floor(rnd() * pool.length)];
+  }
+
+  const hard = level === 'hard', extreme = level === 'extreme';
+  const piles = G.piles || [];
+  const inPiles = f => piles.reduce((s, pl) => s + pl.filter(f).length, 0);
+  // is a majority still open? (mine can still win or lose it)
+  const contested = (f, total) => {
+    const vals = piles.map(pl => pl.filter(f).length);
+    const rem = total - vals.reduce((a, b) => a + b, 0);
+    const mine = vals[mySide] || 0;
+    const other = Math.max(0, ...vals.filter((_, i) => i !== mySide));
+    return !(mine > other + rem || mine + rem < other);
+  };
+  const is7 = c => c.v === 7, isD = c => c.s === 'D', is6 = c => c.v === 6;
+  // hard remembers sevens, the Settebello and Denari; extreme remembers everything
+  const denariLive = (hard || extreme) ? contested(isD, 10) : true;
+  const sevensLive = (hard || extreme) ? contested(is7, 4) : true;
+  const sixesLive = extreme ? contested(is6, 4) : true;
+  const cardsLive = extreme ? contested(() => true, 40) : true;
+  const worth = c => {
+    let w = cardsLive ? 1 : 0.3;
+    if (c.s === 'D') w += denariLive ? 2 : 0.2;
+    if (c.v === 7) w += sevensLive ? 3 : 0.5;
+    else if (c.v === 6) w += sixesLive ? 1.5 : 0.3;
+    else if (c.v === 1) w += 1;
+    if (c.s === 'D' && c.v === 7) w += 10;
+    return w;
+  };
+  const worthAll = cs => cs.reduce((s, c) => s + worth(c), 0);
+
+  // cards I don't know the place of: extreme remembers every captured card,
+  // hard only the sevens and Denari it saw being captured (plus what's on the table and in its hand)
+  const remembered = extreme ? piles.flat() : hard ? piles.flat().filter(c => is7(c) || isD(c)) : [];
+  const seen = new Set([...remembered, ...table, ...hand].map(c => c.id));
+  const unseen = [];
+  for (const s of ['D', 'C', 'S', 'B']) for (let v = 1; v <= 10; v++) if (!seen.has(s + v)) unseen.push({ s, v, id: s + v });
+
+  // extreme, two players, last deal: the opponent's cards are exactly the unseen ones, so it plays the ending out
+  if (extreme && n === 2 && deckLeft === 0) {
+    const opHand = unseen;
+    if (opHand.length === G.hands[1 - p].length) {
+      const lastWho = G.lastSide === null || G.lastSide === undefined ? null : (G.lastSide === mySide ? 'me' : 'op');
+      const solve = (myH, opH, tbl, meTurn, last) => {
+        if (!myH.length && !opH.length) { const r = worthAll(tbl); return last === 'me' ? r : last === 'op' ? -r : 0; }
+        const H = meTurn ? myH : opH;
+        let best = meTurn ? -1e9 : 1e9;
+        for (const c of H) {
+          const opts = optionsFn(c, tbl), list = opts.length ? opts : [null];
+          for (const o of list) {
+            let gain = 0, nt, nl = last;
+            if (o) {
+              const ids = new Set(o.map(x => x.id));
+              nt = tbl.filter(x => !ids.has(x.id));
+              gain = worth(c) + worthAll(o);
+              if (!nt.length && myH.length + opH.length > 1 && !takesAll(c)) gain += 14;
+              nl = meTurn ? 'me' : 'op';
+            } else nt = [...tbl, c];
+            const v = (meTurn ? gain : -gain) + solve(meTurn ? myH.filter(x => x !== c) : myH, meTurn ? opH : opH.filter(x => x !== c), nt, !meTurn, nl);
+            if (meTurn ? v > best : v < best) best = v;
+          }
+        }
+        return best;
+      };
+      let bestMove = null, bestVal = -1e9;
+      for (const m of moves) {
+        let gain = 0, nt, nl = lastWho;
+        if (m.opt) {
+          const ids = new Set(m.opt.map(x => x.id));
+          nt = table.filter(x => !ids.has(x.id));
+          gain = worth(m.card) + worthAll(m.opt);
+          if (!nt.length && hand.length + opHand.length > 1 && !takesAll(m.card)) gain += 14;
+          nl = 'me';
+        } else nt = [...table, m.card];
+        const v = gain + solve(hand.filter(x => x !== m.card), opHand, nt, false, nl) + rnd() * 0.01;
+        if (v > bestVal) { bestVal = v; bestMove = m; }
+      }
+      if (bestMove) return bestMove;
     }
   }
+
+  // how much the next player can be expected to take from the table I leave behind
+  const next = (p + 1) % n;
+  const nextHand = G.hands[next].length;
+  const pHolds = v => {
+    const k = unseen.filter(c => c.v === v).length, U = unseen.length;
+    if (!k || !nextHand || !U) return 0;
+    let none = 1;
+    for (let i = 0; i < nextHand; i++) none *= Math.max(0, (U - k - i)) / (U - i);
+    return 1 - none;
+  };
+  const danger = rest => {
+    if (!rest.length) return 0;
+    if (!extreme && !hard) return sum(rest) <= 10 ? 7 : 0;
+    const nextLast = deckLeft === 0 && handTotal - 1 === 1;
+    const gains = [];
+    for (let v = 1; v <= 10; v++) {
+      const pv = pHolds(v);
+      if (!pv) continue;
+      const opts = optionsFn({ s: '?', v, id: '?' + v }, rest);
+      if (!opts.length) continue;
+      let g = 0;
+      for (const o of opts) {
+        let x = 1 + (v === 7 ? 3 : v === 6 ? 1.5 : v === 1 ? 1 : 0) + worthAll(o);
+        if (o.length === rest.length && !nextLast && !(v === 1 && R.ace === 'all')) x += 14;
+        g = Math.max(g, x);
+      }
+      gains.push({ g, pv });
+    }
+    gains.sort((a, b) => b.g - a.g);
+    let e = 0, miss = 1;
+    for (const { g, pv } of gains) { e += g * pv * miss; miss *= 1 - pv; }
+    return e * (extreme ? 0.9 : 0.8);
+  };
+
+  const jitter = extreme ? 0.15 : hard ? 0.4 : 0.6;
+  let best = null;
+  for (const m of moves) {
+    const c = m.card;
+    let sc;
+    if (!m.opt) {
+      const rest = [...table, c];
+      sc = -worth(c) * (extreme || hard ? 0.4 : 1.3) - danger(rest);
+      if (extreme && lastPlay && G.lastSide !== null && G.lastSide !== undefined) sc += (G.lastSide === mySide ? 1 : -1) * worthAll(rest);
+    } else {
+      const ids = new Set(m.opt.map(x => x.id)), rest = table.filter(x => !ids.has(x.id));
+      sc = worth(c) + worthAll(m.opt);
+      if (!rest.length && !lastPlay && !takesAll(c)) sc += 14;
+      sc -= danger(rest);
+      // the last one to take something also gets whatever is left on the table
+      if ((extreme || hard) && lastPlay) sc += worthAll(rest);
+    }
+    sc += rnd() * jitter;
+    if (!best || sc > best.sc) best = { card: c, opt: m.opt, sc };
+  }
   return best;
+}
+/* AI-END */
+function aiMove(p){
+  return chooseMove({players:S.players, hands:S.hand, table:S.table, deck:S.deck, piles:S.piles, settings:S.settings, lastSide:S.last}, p, S.players[p].level||'normal', options);
 }
 /* decides what happens next: computer moves on its own, a human waits (behind the cover screen when several share the device) */
 function proceed(){
@@ -965,7 +1118,7 @@ function replaceBtn(p){
 function seatTag(p){
   const pl=S.players[p], bits=[];
   if(S.teams) bits.push(`<span class="team t${pl.side}"><span class="long">${t('teamWord')}</span>${'AB'[pl.side]}</span>`);
-  if(pl.ai) bits.push(`<span class="tag ai">${t('computer')}</span>`);
+  if(pl.ai) bits.push(`<span class="tag ai">${esc(compLabel(pl.level))}</span>`);
   return bits.join('');
 }
 function render(skipOverlay){
@@ -1096,7 +1249,7 @@ function menuHTML(){
   const seatRows=s.seats.map((seat,i)=>`<div class="seat" id="seat${i}" ${i>=s.players?'hidden':''}>
       <span class="num">${i+1}</span>
       <input type="text" id="name${i}" value="${esc(seat.name)}" maxlength="16" aria-label="${t('seatName',{n:i+1})}">
-      <select id="ai${i}" aria-label="${t('seatBy',{n:i+1})}"><option value="0" ${seat.ai?'':'selected'}>${t('human')}</option><option value="1" ${seat.ai?'selected':''}>${t('computer')}</option></select>
+      <select id="ai${i}" aria-label="${t('seatBy',{n:i+1})}"><option value="human" ${seat.ai?'':'selected'}>${t('human')}</option><optgroup label="${t('computer')}">${LEVELS.map(l=>`<option value="${l}" ${seat.ai&&seat.level===l?'selected':''}>${t('lvl_'+l)}</option>`).join('')}</optgroup></select>
       <button type="button" class="reroll ${seat.ai?'':'off'}" id="re${i}" title="${t('reroll')}" aria-label="${t('reroll')}" ${seat.ai?'':'tabindex="-1" aria-hidden="true"'}>↻</button>
       <span class="team t${i%2}" data-team>${'AB'[i%2]}</span>
     </div>`).join('');
@@ -1194,7 +1347,7 @@ function bindMenu(){
   };
   for(let i=0;i<4;i++){
     $('ai'+i).addEventListener('change',()=>{
-      const ai=$('ai'+i).value==='1', inp=$('name'+i), cur=inp.value.trim();
+      const ai=$('ai'+i).value!=='human', inp=$('name'+i), cur=inp.value.trim();
       if(ai&&(!cur||DEFAULT_NAME_RE.test(cur))) inp.value=pickName(i);
       if(!ai&&isCompName(cur)) inp.value=defaultName(i);
       const re=$('re'+i); re.classList.toggle('off',!ai); if(ai){re.removeAttribute('tabindex'); re.removeAttribute('aria-hidden');} else {re.tabIndex=-1; re.setAttribute('aria-hidden','true');}
@@ -1203,7 +1356,7 @@ function bindMenu(){
   }
   const collect=()=>{
     const players=count();
-    const seats=[0,1,2,3].map(i=>({name:$('name'+i).value.trim()||($('ai'+i).value==='1'?DEFAULT_SEATS[i].name:defaultName(i)), ai:$('ai'+i).value==='1'}));
+    const seats=[0,1,2,3].map(i=>{ const v=$('ai'+i).value, ai=v!=='human'; return {name:$('name'+i).value.trim()||(ai?DEFAULT_SEATS[i].name:defaultName(i)), ai, level:ai?v:'normal'}; });
     if(seats.slice(0,players).every(x=>x.ai)) seats[0].ai=false;
     return {lang:LANG, target:$('t21').checked?21:11, values:$('values').checked, anim:$('anim').checked, players, mode:mode(), custom:customRules(), seats, where:online()?'online':'local', oname:$('oname').value.trim().slice(0,16)};
   };
@@ -1474,10 +1627,11 @@ function lobbyHTML(){
     const tags=[];
     if(i===0) tags.push(`<span class="tag dark">${t('host')}</span>`);
     if(i===ON.seat) tags.push(`<span class="tag dark">${t('you')}</span>`);
-    if(p.ai) tags.push(`<span class="tag dark">${t('computer')}</span>`);
+
     if(st.players.length===4&&rulesOf(st.settings).teams) tags.push(`<span class="team t${i%2}">${t('team',{x:'AB'[i%2]})}</span>`);
     let ctrl='';
-    if(host&&i>0&&(p.open||p.ai)) ctrl=`<button class="btn mini" type="button" data-seat="${i}" data-ai="${p.open?1:0}">${p.open?t('computer'):t('release')}</button>`;
+    if(host&&i>0&&(p.open||p.ai)) ctrl=`<select class="lvl" data-seat="${i}" aria-label="${t('seatBy',{n:i+1})}"><option value="open" ${p.open?'selected':''}>${t('freeSeat')}</option><optgroup label="${t('computer')}">${LEVELS.map(l=>`<option value="${l}" ${!p.open&&(p.level||'normal')===l?'selected':''}>${t('lvl_'+l)}</option>`).join('')}</optgroup></select>`;
+    else if(p.ai) tags.push(`<span class="tag dark">${esc(compLabel(p.level))}</span>`);
     return `<li class="${p.open?'open':''}"><span class="num">${i+1}</span><span class="pname">${p.open?t('freeSeat'):esc(p.name)}</span><span class="ptags">${tags.join('')}</span>${ctrl}</li>`;
   }).join('');
   const open=st.players.filter(p=>p.open).length;
@@ -1501,7 +1655,7 @@ function bindLobby(){
   $('copyLink').addEventListener('click',()=>copy(location.origin+location.pathname+'#'+ON.code,t('copiedLink')));
   $('leaveRoom').addEventListener('click',()=>leaveOnline());
   const s=$('startRoom'); if(s) s.addEventListener('click',()=>{ s.disabled=true; onlineAction('start').finally(()=>{ if($('startRoom')) $('startRoom').disabled=false; }); });
-  document.querySelectorAll('[data-seat]').forEach(b=>b.addEventListener('click',()=>{ b.disabled=true; onlineAction('seat',{seat:+b.dataset.seat,ai:b.dataset.ai==='1'}); }));
+  document.querySelectorAll('select.lvl[data-seat]').forEach(b=>b.addEventListener('change',()=>{ b.disabled=true; onlineAction('seat',{seat:+b.dataset.seat, ai:b.value!=='open', level:b.value}); }));
 }
 async function tryResume(){
   const sess=loadSession();

@@ -128,7 +128,8 @@ async function handle(b: any) {
       const s = Number(b.seat), p = G.players[s];
       if (!p || s === 0) throw C.err('Diesen Platz gibt es nicht.', 400, 'noSeat');
       if (!p.open && !p.ai) throw C.err('Auf diesem Platz sitzt schon jemand.', 409, 'seatTaken');
-      G.players[s] = b.ai ? { name: pickCompName(G.players), ai: true, open: false } : { name: null, ai: false, open: true };
+      const level = C.LEVELS.includes(b.level) ? b.level : 'normal';
+      G.players[s] = b.ai ? { name: p.ai ? p.name : pickCompName(G.players), ai: true, level, open: false } : { name: null, ai: false, open: true };
       const version = await save(room, G, tokens);
       return { ok: true, version, state: C.publicState(G) };
     }
@@ -137,7 +138,7 @@ async function handle(b: any) {
       requireHost(tokens, b.token);
       if (G.status !== 'lobby') throw C.err('Das Spiel läuft schon.', 409, 'started');
       // empty seats are taken by the computer
-      G.players.forEach((p: any, i: number) => { if (p.open) G.players[i] = { name: pickCompName(G.players), ai: true, open: false }; });
+      G.players.forEach((p: any, i: number) => { if (p.open) G.players[i] = { name: pickCompName(G.players), ai: true, level: 'normal', open: false }; });
       C.setupGame(G);
       const version = await save(room, G, tokens);
       return { ok: true, version, state: C.publicState(G) };
@@ -179,7 +180,7 @@ async function handle(b: any) {
       requireHost(tokens, b.token);
       const s = Number(b.seat), p = G.players[s];
       if (!p || s === 0 || p.ai) throw C.err('Diesen Platz kann der Computer nicht übernehmen.', 400, 'cantReplace');
-      p.ai = true;
+      p.ai = true; p.level = 'normal';
       tokens[s] = newToken();
       const version = await save(room, G, tokens);
       return { ok: true, version, state: C.publicState(G) };

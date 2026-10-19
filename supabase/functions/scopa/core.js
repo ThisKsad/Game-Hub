@@ -1,11 +1,14 @@
 // Scopa rules shared by the online server. Pure functions on a game object G.
 // Mirrors the rules of the local game in scopa/index.html.
 
+import { chooseMove } from './ai.js';
+
 export const SUITS = ['D', 'C', 'S', 'B'];
 const SUIT_NAME = { D: 'Denari', C: 'Coppe', S: 'Spade', B: 'Bastoni' };
 const RANK_NAME = { 1: 'Asso', 8: 'Fante', 9: 'Cavallo', 10: 'Re' };
 const PV = { 7: 21, 6: 18, 1: 16, 5: 15, 4: 14, 3: 13, 2: 12, 8: 10, 9: 10, 10: 10 };
 export const COMP_NAMES = ['Don Denari', 'Settebello-Sepp', 'Primiera-Paolo', 'Scopatron 3000', 'Nonna Bytes', 'Robo Ravioli', 'Cavallo Calcolo'];
+export const LEVELS = ['easy', 'normal', 'hard', 'extreme'];
 export const MODES = {
   house: { name: 'Hausregeln', classic: false, ace: 'eleven', teams: false, free: true },
   classic: { name: 'Klassisch', classic: true, ace: 'one', teams: true, free: false },
@@ -198,30 +201,11 @@ function endRound(G) {
 }
 
 /* ---------- computer ---------- */
-function worth(c) { let w = 1; if (c.s === 'D') w += 2; if (c.v === 7) w += 3; else if (c.v === 6) w += 1.5; else if (c.v === 1) w += 1; if (c.s === 'D' && c.v === 7) w += 10; return w; }
-function risk(t) { if (!t.length) return 0; const sum = t.reduce((s, c) => s + c.v, 0); return sum <= 10 ? 7 : 0; }
-export function aiMove(G, p) {
-  const lastPlay = G.deck.length === 0 && handTotal(G) === 1;
-  let best = null;
-  const consider = (card, opt, sc) => { if (!best || sc > best.sc) best = { card, opt, sc }; };
-  for (const c of G.hands[p]) {
-    const opts = options(G, c);
-    if (!opts.length) { consider(c, null, -worth(c) * 1.3 - risk([...G.table, c]) + Math.random() * 0.6); continue; }
-    for (const o of opts) {
-      const ids = new Set(o.map(x => x.id)), rest = G.table.filter(x => !ids.has(x.id));
-      let sc = worth(c) + o.reduce((s, x) => s + worth(x), 0);
-      if (!rest.length && !lastPlay && !takesAll(G, c)) sc += 14;
-      sc -= risk(rest); sc += Math.random() * 0.6;
-      consider(c, o, sc);
-    }
-  }
-  return best;
-}
 export function playAI(G) {
   if (G.status !== 'play') throw err('Gerade läuft keine Runde.', 400, 'noRound');
   const p = G.turn;
   if (!G.players[p].ai) throw err('Ein Mensch ist dran.', 400, 'notTurn');
-  const m = aiMove(G, p);
+  const m = chooseMove(G, p, G.players[p].level || 'normal', (c, t) => options(G, c, t));
   applyMove(G, p, m.card, m.opt);
 }
 
