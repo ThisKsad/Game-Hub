@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body style="margin:0">
+<title>Scopa</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+<style>
+/* Layout: one card table — opponent across the top, green felt in the middle, your hand at the bottom. Single deliberate look (felt table), works on any host background. */
+:root{
+  --felt:#245442; --felt-deep:#173a2c; --felt-line:#3a6b57;
+  --brass:#d6ac55; --brass-soft:rgba(214,172,85,.18);
+  --cream:#f6efdf; --ink:#2b2218; --ink-soft:#6c5f4c; --wine:#8c2c2a;
+  --text:#ede7d7; --muted:#a8bdac;
+  --display:"Cinzel", "Trajan Pro", Georgia, serif;
+  --body:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --cw:clamp(52px, 14.5vw, 82px);
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{
+  background-color:var(--felt-deep);
+  background-image:radial-gradient(ellipse 80% 70% at 50% 45%, var(--felt) 0%, var(--felt-deep) 100%);
+  background-attachment:fixed;
+  color:var(--text); font-family:var(--body); font-size:16px; line-height:1.4;
+}
+.app{
+  max-width:920px; margin:0 auto; min-height:100%; box-sizing:border-box;
+  display:flex; flex-direction:column; gap:12px;
+  padding-block:12px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+header{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+.brand{font-family:var(--display); font-weight:700; font-size:24px; letter-spacing:.12em; color:var(--brass); margin:0}
+.score{display:flex; align-items:baseline; gap:10px; font-variant-numeric:tabular-nums}
+.score b{font-family:var(--display); font-size:24px; color:var(--cream)}
+.score em{font-style:normal; color:var(--muted); font-size:14px; text-transform:uppercase; letter-spacing:.08em}
+.score .sep{color:var(--brass)}
+.score small{color:var(--muted); font-size:13px; margin-left:6px}
+.btn{
+  font:inherit; font-weight:500; cursor:pointer; border-radius:6px; padding:8px 14px;
+  border:1px solid var(--brass); background:transparent; color:var(--brass);
+}
+.btn:hover{background:var(--brass-soft)}
+.btn:focus-visible,.card:focus-visible{outline:3px solid var(--brass); outline-offset:3px}
+.btn.primary{background:var(--brass); color:var(--ink)}
+.btn.primary:hover{background:#e4bd69}
+
+.zone{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+.who{font-family:var(--display); font-size:15px; letter-spacing:.1em; color:var(--muted); text-transform:uppercase}
+.chips{display:flex; gap:8px; flex-wrap:wrap}
+.chip{font-size:13px; padding:3px 10px; border-radius:999px; border:1px solid var(--felt-line); color:var(--muted); font-variant-numeric:tabular-nums}
+.chip b{color:var(--cream); font-weight:700}
+.chip.hot{border-color:var(--brass); color:var(--brass)}
+.chip.hot b{color:var(--brass)}
+.row{display:flex; gap:8px; justify-content:center; flex-wrap:wrap; min-width:0}
+
+.card{
+  width:var(--cw); aspect-ratio:60/92; max-width:100%; border-radius:6px; flex:none;
+  box-shadow:0 2px 0 rgba(0,0,0,.25), 0 6px 14px rgba(0,0,0,.28);
+  background:var(--cream); position:relative; transition:transform .18s ease, box-shadow .18s ease;
+}
+.card svg{display:block; width:100%; height:100%}
+.back{
+  --cw:clamp(34px, 9vw, 50px);
+  background:var(--wine);
+  background-image:repeating-linear-gradient(45deg, rgba(246,239,223,.16) 0 2px, transparent 2px 7px),
+                   repeating-linear-gradient(-45deg, rgba(246,239,223,.16) 0 2px, transparent 2px 7px);
+  border:3px solid var(--cream); box-sizing:border-box;
+}
+.opp-cards{display:flex; gap:6px}
+
+.table{
+  flex:1; position:relative; border:1px solid var(--felt-line); border-radius:16px;
+  min-height:calc(var(--cw) * 1.53 + 56px);
+  display:flex; flex-wrap:wrap; gap:10px; align-items:center; align-content:center; justify-content:center;
+  padding:28px 14px 14px; box-shadow:inset 0 0 40px rgba(0,0,0,.22);
+}
+.deck{position:absolute; top:8px; left:12px; font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums}
+.deck b{color:var(--cream)}
+.empty{color:var(--muted); font-style:italic}
+.card.target{transform:translateY(-6px); box-shadow:0 0 0 3px var(--brass), 0 10px 18px rgba(0,0,0,.35)}
+.card.taken{box-shadow:0 0 0 3px var(--brass), 0 10px 18px rgba(0,0,0,.35); animation:pulse .5s ease-in-out infinite alternate}
+.card.incoming{box-shadow:0 0 0 3px var(--cream), 0 10px 18px rgba(0,0,0,.35); animation:drop .35s ease-out}
+.card.incoming.opp{box-shadow:0 0 0 3px var(--wine), 0 0 0 5px var(--cream)}
+@keyframes drop{from{transform:translateY(-24px) scale(1.06); opacity:.2}to{transform:none; opacity:1}}
+@keyframes pulse{from{transform:translateY(-4px)}to{transform:translateY(-8px)}}
+
+.msg{text-align:center; color:var(--muted); font-style:italic; min-height:1.4em; margin:0}
+.hand{display:flex; gap:10px; justify-content:center; padding-top:10px; min-height:calc(var(--cw) * 1.53 + 10px)}
+button.card{border:0; padding:0; cursor:pointer; font:inherit}
+button.card:disabled{cursor:default}
+button.card:not(:disabled):hover{transform:translateY(-5px)}
+button.card.sel{transform:translateY(-12px); box-shadow:0 0 0 3px var(--brass), 0 12px 20px rgba(0,0,0,.35)}
+.hand.wait button.card{filter:saturate(.75) brightness(.92)}
+
+.opts{min-height:44px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center}
+.opts p{margin:0; color:var(--muted); width:100%; text-align:center; font-size:14px}
+
+.overlay{
+  position:fixed; inset:0; z-index:20; background:rgba(12,28,21,.78);
+  display:flex; align-items:center; justify-content:center; overflow:auto;
+  padding-block:max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px));
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+.sheet{
+  background:var(--cream); color:var(--ink); border-radius:12px; width:100%; max-width:470px;
+  padding:24px; box-sizing:border-box; box-shadow:0 20px 50px rgba(0,0,0,.45); margin:auto;
+  display:flex; flex-direction:column; gap:16px;
+}
+.sheet h2{font-family:var(--display); font-size:26px; letter-spacing:.06em; margin:0; color:var(--wine); text-wrap:balance}
+.sheet p{margin:0; color:var(--ink-soft)}
+.field{display:flex; flex-direction:column; gap:8px}
+.field > span{font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft); font-weight:700}
+.seg{display:flex; gap:8px}
+.seg label{flex:1; position:relative}
+.seg input{position:absolute; opacity:0; inset:0; margin:0; cursor:pointer}
+.seg label span{display:block; text-align:center; padding:9px; border:1px solid #cdbf9f; border-radius:6px; font-weight:500}
+.seg input:checked + span{background:var(--wine); border-color:var(--wine); color:var(--cream)}
+.seg input:focus-visible + span{outline:3px solid var(--brass); outline-offset:2px}
+.check{display:flex; gap:10px; align-items:flex-start; cursor:pointer}
+.check input{width:20px; height:20px; margin:2px 0 0; accent-color:var(--wine); flex:none}
+.check small{display:block; color:var(--ink-soft); font-size:14px; margin-top:2px}
+.sheet .btn{border-color:var(--wine); color:var(--wine)}
+.sheet .btn:hover{background:rgba(140,44,42,.08)}
+.sheet .btn.primary{background:var(--wine); color:var(--cream)}
+.sheet .btn.primary:hover{background:#a03432}
+.actions{display:flex; gap:10px; flex-wrap:wrap}
+.actions .btn{flex:1; padding:11px 14px}
+details{border-top:1px solid #e0d5bb; padding-top:12px}
+summary{cursor:pointer; font-weight:700; color:var(--wine)}
+details ul{margin:10px 0 0; padding-left:18px; color:var(--ink-soft); font-size:14px; display:flex; flex-direction:column; gap:4px}
+
+table.sum{width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums}
+.sum th,.sum td{padding:7px 6px; border-bottom:1px solid #e3d9c2; text-align:center}
+.sum th:first-child{text-align:left; font-weight:500}
+.sum thead th{font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft)}
+.sum td.win{font-weight:700}
+.sum .pt{display:inline-block; margin-left:6px; padding:0 6px; border-radius:999px; background:var(--wine); color:var(--cream); font-size:12px; font-weight:700}
+.sum tfoot th,.sum tfoot td{border-bottom:0; font-weight:700}
+.sum tfoot tr.total td{font-family:var(--display); font-size:20px; color:var(--wine)}
+.note{font-size:14px}
+
+.flash{
+  position:fixed; inset:0; z-index:30; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  pointer-events:none; animation:flash 1.3s ease forwards;
+}
+.flash b{font-family:var(--display); font-size:clamp(48px, 14vw, 88px); color:var(--brass); letter-spacing:.08em; text-shadow:0 4px 18px rgba(0,0,0,.55)}
+.flash span{color:var(--cream); font-size:18px; text-shadow:0 2px 8px rgba(0,0,0,.6)}
+@keyframes flash{0%{opacity:0; transform:scale(.7)}18%{opacity:1; transform:scale(1.05)}30%{transform:scale(1)}80%{opacity:1}100%{opacity:0}}
+
+@media (max-width:480px){
+  .table{gap:7px; padding:28px 8px 10px}
+  .hand{gap:8px}
+  .brand{font-size:20px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important; transition:none !important}
+}
+</style>
+
+<div class="app">
+  <header>
+    <h1 class="brand">Scopa</h1>
+    <div class="score" id="score"></div>
+    <button class="btn" id="menuBtn" type="button">Menü</button>
+  </header>
+  <section class="zone" aria-label="Computer">
+    <div class="who">Computer</div>
+    <div class="opp-cards" id="oppHand"></div>
+    <div class="chips" id="oppChips"></div>
+  </section>
+  <section class="table" id="table" aria-label="Tisch"></section>
+  <p class="msg" id="msg" aria-live="polite"></p>
+  <div class="opts" id="opts"></div>
+  <section class="hand" id="hand" aria-label="Deine Karten"></section>
+  <section class="zone" aria-label="Du">
+    <div class="who">Du</div>
+    <div class="chips" id="myChips"></div>
+  </section>
+</div>
+<div id="overlay"></div>
+
+<script>
+const SUITS=['D','C','S','B'];
+const SUIT_NAME={D:'Denari',C:'Coppe',S:'Spade',B:'Bastoni'};
+const RANK_NAME={1:'Asso',8:'Fante',9:'Cavallo',10:'Re'};
+const RANK_SHORT={1:'A',8:'F',9:'C',10:'R'};
+const SUIT_COLOR={D:'#b8860b',C:'#a8322a',S:'#2f5d8a',B:'#3d7a3a'};
+const PV={7:21,6:18,1:16,5:15,4:14,3:13,2:12,8:10,9:10,10:10};
+const nm=c=>`${RANK_NAME[c.v]||c.v} di ${SUIT_NAME[c.s]}`;
+
+/* ---------- card artwork ---------- */
+function sym(s,x,y,k){
+  const col=SUIT_COLOR[s]; let g;
+  if(s==='D') g=`<circle r="7" fill="${col}" stroke="#6b4e0a" stroke-width="1"/><circle r="4.2" fill="none" stroke="#f3e2a8" stroke-width="1"/><circle r="1.4" fill="#6b4e0a"/>`;
+  else if(s==='C') g=`<path d="M-7,-7 H7 Q7,2.5 0,3.5 Q-7,2.5 -7,-7Z" fill="${col}"/><path d="M-5,-5 H5" stroke="#f3d2a0" stroke-width="1"/><rect x="-1.1" y="3" width="2.2" height="3.8" fill="${col}"/><rect x="-4.8" y="6.4" width="9.6" height="2" rx="1" fill="${col}"/>`;
+  else if(s==='S') g=`<path d="M0,-10 L2.2,3.5 L-2.2,3.5Z" fill="${col}"/><rect x="-6" y="3.5" width="12" height="2" rx="1" fill="#6b4e0a"/><rect x="-1" y="5.5" width="2" height="3.4" fill="#6b4e0a"/><circle cy="9.6" r="1.5" fill="#6b4e0a"/>`;
+  else g=`<g transform="rotate(-18)"><path d="M-2.4,-9.5 Q0,-11 2.4,-9.5 L1.8,9 Q0,10.2 -1.8,9Z" fill="${col}"/><circle cx="2.4" cy="-3" r="1.3" fill="${col}"/><circle cx="-2.3" cy="2" r="1.3" fill="${col}"/><circle cx="2" cy="5.5" r="1.1" fill="${col}"/></g>`;
+  return `<g transform="translate(${x},${y}) scale(${k})">${g}</g>`;
+}
+const PIPS={1:[[30,46]],2:[[30,25],[30,67]],3:[[30,19],[30,46],[30,73]],4:[[19,25],[41,25],[19,67],[41,67]],
+  5:[[19,22],[41,22],[30,46],[19,70],[41,70]],6:[[19,20],[41,20],[19,46],[41,46],[19,72],[41,72]],
+  7:[[19,20],[41,20],[30,33],[19,46],[41,46],[19,72],[41,72]]};
+function cardSVG(c){
+  const col=SUIT_COLOR[c.s], r=RANK_SHORT[c.v]||c.v, f='font-family="Cinzel, Georgia, serif" font-weight="700"';
+  let body;
+  if(c.v<=7){ const k=c.v===1?2.1:(c.v>=6?0.82:0.95); body=PIPS[c.v].map(([x,y])=>sym(c.s,x,y,k)).join(''); }
+  else body=`<rect x="11" y="16" width="38" height="60" rx="3" fill="none" stroke="${col}" stroke-width="1" opacity=".45"/>${sym(c.s,30,40,1.5)}<text x="30" y="66" text-anchor="middle" ${f} font-size="${c.v===9?6.4:7.4}" fill="${col}">${RANK_NAME[c.v].toUpperCase()}</text>`;
+  return `<svg viewBox="0 0 60 92" aria-hidden="true"><rect x=".5" y=".5" width="59" height="91" rx="5" fill="#f6efdf" stroke="#d8ccb0"/>
+<text x="5" y="13" ${f} font-size="11" fill="${col}">${r}</text><text x="55" y="87" text-anchor="end" ${f} font-size="11" fill="${col}">${r}</text>${body}</svg>`;
+}
+const cardDiv=(c,cls='')=>`<div class="card ${cls}" data-id="${c.id}" role="img" aria-label="${nm(c)}">${cardSVG(c)}</div>`;
+
+/* ---------- settings ---------- */
+function loadSettings(){
+  try{ const s=JSON.parse(localStorage.getItem('scopa-settings')); if(s&&s.target) return s; }catch(e){}
+  return {target:11, classic:false};
+}
+function saveSettings(s){ try{ localStorage.setItem('scopa-settings', JSON.stringify(s)); }catch(e){} }
+
+/* ---------- game state ---------- */
+let S=null, ui={menu:true, started:false};
+let timers=[];
+const later=(ms,fn)=>timers.push(setTimeout(fn,ms));
+const clearTimers=()=>{timers.forEach(clearTimeout); timers=[];};
+const $=id=>document.getElementById(id);
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function newDeck(){const d=[];for(const s of SUITS)for(let v=1;v<=10;v++)d.push({s,v,id:s+v});return shuffle(d);}
+
+function newGame(settings){
+  clearTimers();
+  S={scores:[0,0], dealer:Math.random()<.5?0:1, round:0, settings:{...settings}, phase:'play'};
+  startRound();
+}
+function startRound(){
+  S.round++; S.dealer=1-S.dealer;
+  S.deck=newDeck(); S.hand=[[],[]]; S.piles=[[],[]]; S.scope=[0,0];
+  S.table=S.deck.splice(0,4); S.last=null; S.sel=null; S.pending=null; S.summary=null;
+  deal(); S.turn=1-S.dealer; S.phase='play';
+  S.msg=S.turn===0?'Du beginnst. Wähle eine Karte.':'Der Computer beginnt.';
+  render(); maybeAI();
+}
+function deal(){const first=1-S.dealer;for(let i=0;i<3;i++){S.hand[first].push(S.deck.pop());S.hand[1-first].push(S.deck.pop());}}
+
+function options(card,table){
+  const same=table.filter(t=>t.v===card.v);
+  if(same.length) return same.map(t=>[t]);
+  const res=[], n=table.length;
+  for(let m=1;m<(1<<n);m++){
+    if((m&(m-1))===0) continue;
+    let sum=0; const set=[];
+    for(let i=0;i<n;i++) if(m&(1<<i)){sum+=table[i].v; set.push(table[i]); if(sum>card.v) break;}
+    if(sum===card.v && set.length>1) res.push(set);
+  }
+  return res;
+}
+
+function play(p,cardId,opt){
+  if(S.pending||S.phase!=='play'||S.turn!==p) return;
+  const card=S.hand[p].find(c=>c.id===cardId); if(!card) return;
+  S.hand[p]=S.hand[p].filter(c=>c.id!==cardId); S.sel=null;
+  S.pending={p,card,ids:opt?opt.map(c=>c.id):null};
+  const takes=opt?opt.map(nm).join(' + '):'';
+  S.msg = p===0
+    ? (opt?`Du spielst ${nm(card)} und nimmst ${takes}.`:`Du legst ${nm(card)} auf den Tisch.`)
+    : (opt?`Computer spielt ${nm(card)} und nimmt ${takes}.`:`Computer legt ${nm(card)} auf den Tisch.`);
+  render();
+  later(p===1?1300:550, commit);
+}
+function commit(){
+  if(!S.pending) return;
+  const {p,card,ids}=S.pending; S.pending=null;
+  const lastPlay=S.deck.length===0&&S.hand[0].length===0&&S.hand[1].length===0;
+  if(ids){
+    const set=new Set(ids), taken=S.table.filter(c=>set.has(c.id));
+    S.table=S.table.filter(c=>!set.has(c.id));
+    S.piles[p].push(card,...taken); S.last=p;
+    if(S.table.length===0&&!lastPlay){S.scope[p]++; flash(p);}
+  } else S.table.push(card);
+  S.turn=1-p;
+  if(S.hand[0].length===0&&S.hand[1].length===0){
+    if(S.deck.length){ deal(); }
+    else { endRound(); return; }
+  }
+  if(S.turn===0) S.msg+=' Du bist dran.';
+  render(); maybeAI();
+}
+
+/* ---------- scoring ---------- */
+const cnt=(p,v)=>p.filter(c=>c.v===v).length;
+function primSum(p){let sum=0;for(const s of SUITS){const cs=p.filter(c=>c.s===s);if(!cs.length)return null;sum+=Math.max(...cs.map(c=>PV[c.v]));}return sum;}
+function scoreRound(){
+  const [a,b]=S.piles, win=(x,y)=>x>y?0:y>x?1:null, rows=[];
+  rows.push({label:'Karten',a:a.length,b:b.length,w:win(a.length,b.length)});
+  const d=p=>p.filter(c=>c.s==='D').length;
+  rows.push({label:'Denari',a:d(a),b:d(b),w:win(d(a),d(b))});
+  const sb=p=>p.some(c=>c.s==='D'&&c.v===7);
+  rows.push({label:'Settebello',a:sb(a)?'✓':'–',b:sb(b)?'✓':'–',w:sb(a)?0:sb(b)?1:null});
+  if(S.settings.classic){
+    const x=primSum(a), y=primSum(b);
+    const w = x===null&&y===null?null : x===null?1 : y===null?0 : win(x,y);
+    rows.push({label:'Primiera',a:x===null?'Farbe fehlt':x,b:y===null?'Farbe fehlt':y,w});
+  } else {
+    let w=null; for(const v of [7,6,1,5,4,3,2]){const x=cnt(a,v),y=cnt(b,v); if(x!==y){w=x>y?0:1;break;}}
+    const show=p=>`${cnt(p,7)}× 7 · ${cnt(p,6)}× 6`;
+    rows.push({label:'Primiera',a:show(a),b:show(b),w});
+  }
+  rows.forEach(r=>r.pts=[r.w===0?1:0,r.w===1?1:0]);
+  rows.push({label:'Scope',a:S.scope[0],b:S.scope[1],pts:[S.scope[0],S.scope[1]]});
+  return rows;
+}
+function endRound(){
+  const rest=S.table.length, restTo=S.last;
+  if(rest&&restTo!==null) S.piles[restTo].push(...S.table);
+  S.table=[];
+  const rows=scoreRound(), gained=[0,0];
+  rows.forEach(r=>{gained[0]+=r.pts[0]; gained[1]+=r.pts[1];});
+  S.scores[0]+=gained[0]; S.scores[1]+=gained[1];
+  const t=S.settings.target, [x,y]=S.scores;
+  const over=(x>=t||y>=t)&&x!==y;
+  S.summary={rows,rest,restTo,gained,winner:over?(x>y?0:1):null};
+  S.phase=over?'gameEnd':'roundEnd';
+  S.msg='Runde vorbei.';
+  render();
+}
+
+/* ---------- computer ---------- */
+function worth(c){let w=1;if(c.s==='D')w+=2;if(c.v===7)w+=3;else if(c.v===6)w+=1.5;else if(c.v===1)w+=1;if(c.s==='D'&&c.v===7)w+=10;return w;}
+function risk(t){if(!t.length)return 0;const sum=t.reduce((s,c)=>s+c.v,0);return sum<=10?7:0;}
+function aiMove(){
+  const lastPlay=S.deck.length===0&&S.hand[0].length===0&&S.hand[1].length===1;
+  let best=null;
+  const consider=(card,opt,sc)=>{if(!best||sc>best.sc)best={card,opt,sc};};
+  for(const c of S.hand[1]){
+    const opts=options(c,S.table);
+    if(!opts.length){consider(c,null,-worth(c)*1.3-risk([...S.table,c])+Math.random()*.6);continue;}
+    for(const o of opts){
+      const ids=new Set(o.map(x=>x.id)), rest=S.table.filter(x=>!ids.has(x.id));
+      let sc=worth(c)+o.reduce((s,x)=>s+worth(x),0);
+      if(!rest.length&&!lastPlay) sc+=14;
+      sc-=risk(rest); sc+=Math.random()*.6;
+      consider(c,o,sc);
+    }
+  }
+  return best;
+}
+function maybeAI(){
+  if(!S||ui.menu||S.phase!=='play'||S.turn!==1||S.pending) return;
+  later(750,()=>{ if(ui.menu||S.turn!==1||S.pending||S.phase!=='play') return; const m=aiMove(); play(1,m.card.id,m.opt); });
+}
+
+/* ---------- player input ---------- */
+function selectCard(id){
+  if(S.phase!=='play'||S.turn!==0||S.pending) return;
+  if(S.sel===id){
+    const card=S.hand[0].find(c=>c.id===id), opts=options(card,S.table);
+    if(opts.length<=1){ play(0,id,opts[0]||null); return; }
+  }
+  S.sel=id; render();
+}
+function tableClick(id){
+  if(!S.sel||S.turn!==0||S.pending) return;
+  const card=S.hand[0].find(c=>c.id===S.sel), opts=options(card,S.table).filter(o=>o.some(c=>c.id===id));
+  if(opts.length===1) play(0,S.sel,opts[0]);
+}
+function highlight(ids){
+  document.querySelectorAll('#table .card').forEach(el=>el.classList.toggle('target',!!ids&&ids.includes(el.dataset.id)));
+}
+
+/* ---------- rendering ---------- */
+function flash(p){
+  const el=document.createElement('div'); el.className='flash';
+  el.innerHTML=`<b>Scopa!</b><span>${p===0?'Punkt für dich':'Punkt für den Computer'}</span>`;
+  document.body.appendChild(el); setTimeout(()=>el.remove(),1350);
+}
+function chips(p){
+  return `<span class="chip">Gesammelt <b>${S.piles[p].length}</b></span><span class="chip ${S.scope[p]?'hot':''}">Scope <b>${S.scope[p]}</b></span>`;
+}
+function render(){
+  const st=S.settings;
+  $('score').innerHTML=`<em>Du</em><b>${S.scores[0]}</b><span class="sep">:</span><b>${S.scores[1]}</b><em>Computer</em><small>bis ${st.target}</small>`;
+  const oppCount=S.hand[1].length;
+  $('oppHand').innerHTML=Array.from({length:oppCount},()=>'<div class="card back" aria-hidden="true"></div>').join('')||'<span class="chip">keine Karten</span>';
+  $('oppChips').innerHTML=chips(1);
+  $('myChips').innerHTML=chips(0)+`<span class="chip">Primiera: ${st.classic?'klassisch':'einfach'}</span>`;
+
+  // table
+  const P=S.pending, taken=new Set(P&&P.ids?P.ids:[]);
+  let selOpts=[];
+  if(S.sel){const card=S.hand[0].find(c=>c.id===S.sel); if(card) selOpts=options(card,S.table);}
+  const autoIds=selOpts.length===1?selOpts[0].map(c=>c.id):[];
+  let html=`<div class="deck">Stapel <b>${S.deck.length}</b></div>`;
+  html+=S.table.map(c=>cardDiv(c,taken.has(c.id)?'taken':autoIds.includes(c.id)?'target':'')).join('');
+  if(P) html+=cardDiv(P.card,'incoming'+(P.p===1?' opp':''));
+  if(!S.table.length&&!P) html+='<span class="empty">Der Tisch ist leer.</span>';
+  $('table').innerHTML=html;
+  $('table').querySelectorAll('.card[data-id]').forEach(el=>el.addEventListener('click',()=>tableClick(el.dataset.id)));
+
+  $('msg').textContent=S.msg||'';
+
+  // hand
+  const myTurn=S.phase==='play'&&S.turn===0&&!P&&!ui.menu;
+  const hand=[...S.hand[0]].sort((a,b)=>a.v-b.v||a.s.localeCompare(b.s));
+  $('hand').className='hand'+(myTurn?'':' wait');
+  $('hand').innerHTML=hand.map(c=>`<button type="button" class="card ${S.sel===c.id?'sel':''}" data-id="${c.id}" aria-label="${nm(c)}" ${myTurn?'':'disabled'}>${cardSVG(c)}</button>`).join('');
+  $('hand').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>selectCard(b.dataset.id)));
+
+  // options
+  let o='';
+  if(myTurn&&S.sel){
+    if(!selOpts.length) o=`<p>Mit dieser Karte kannst du nichts nehmen.</p><button class="btn primary" data-o="-1" type="button">Auf den Tisch legen</button>`;
+    else if(selOpts.length===1) o=`<button class="btn primary" data-o="0" type="button">Nehmen: ${selOpts[0].map(nm).join(' + ')}</button>`;
+    else o=`<p>Wähle, was du nimmst:</p>`+selOpts.map((op,i)=>`<button class="btn" data-o="${i}" type="button">${op.map(nm).join(' + ')}</button>`).join('');
+  } else if(myTurn) o=`<p>Tippe eine Karte an. Zweimal tippen spielt sie direkt.</p>`;
+  $('opts').innerHTML=o;
+  $('opts').querySelectorAll('button').forEach(b=>{
+    const i=+b.dataset.o, op=selOpts[i];
+    b.addEventListener('click',()=>play(0,S.sel,i<0?null:op));
+    if(selOpts.length>1&&op){
+      b.addEventListener('mouseenter',()=>highlight(op.map(c=>c.id)));
+      b.addEventListener('focus',()=>highlight(op.map(c=>c.id)));
+      b.addEventListener('mouseleave',()=>highlight(null));
+      b.addEventListener('blur',()=>highlight(null));
+    }
+  });
+
+  renderOverlay();
+}
+
+function renderOverlay(){
+  const ov=$('overlay');
+  if(ui.menu){ ov.innerHTML=menuHTML(); bindMenu(); return; }
+  if(S.phase==='roundEnd'||S.phase==='gameEnd'){ ov.innerHTML=summaryHTML(); bindSummary(); return; }
+  ov.innerHTML='';
+}
+function menuHTML(){
+  const s=loadSettings();
+  return `<div class="overlay"><form class="sheet" id="menuForm">
+    <h2>Scopa</h2>
+    <p>Das italienische Kartenspiel für zwei, mit 40 Karten gegen den Computer.</p>
+    <div class="field"><span>Gespielt wird bis</span>
+      <div class="seg">
+        <label><input type="radio" name="target" id="t11" value="11" ${s.target===11?'checked':''}><span>11 Punkte</span></label>
+        <label><input type="radio" name="target" id="t21" value="21" ${s.target===21?'checked':''}><span>21 Punkte</span></label>
+      </div></div>
+    <label class="check"><input type="checkbox" id="classic" ${s.classic?'checked':''}>
+      <span><b>Klassische Primiera</b><small>Beste Karte jeder Farbe nach Punktwerten (7 = 21, 6 = 18, Ass = 16, 5 = 15 … Bildkarten = 10). Ohne Haken gewinnt, wer mehr Siebener hat, bei Gleichstand mehr Sechser, dann Asse.</small></span></label>
+    <div class="actions">
+      ${ui.started?'<button class="btn" type="button" id="resume">Weiterspielen</button>':''}
+      <button class="btn primary" type="submit">${ui.started?'Neues Spiel':'Spiel starten'}</button>
+    </div>
+    <details><summary>Regeln kurz</summary><ul>
+      <li>Jeder hat 3 Karten, zu Beginn liegen 4 offen auf dem Tisch.</li>
+      <li>Spiele eine Karte: Nimm eine Tischkarte mit gleichem Wert oder mehrere, deren Summe passt. Eine einzelne passende Karte hat Vorrang.</li>
+      <li>Wer den Tisch abräumt, macht eine Scopa (1 Punkt), außer mit dem letzten Zug der Runde.</li>
+      <li>Je 1 Punkt für meiste Karten, meiste Denari, Settebello (7 di Denari) und Primiera.</li>
+      <li>Werte: Ass 1, 2–7, Fante 8, Cavallo 9, Re 10.</li>
+    </ul></details>
+  </form></div>`;
+}
+function bindMenu(){
+  $('menuForm').addEventListener('submit',e=>{
+    e.preventDefault();
+    const s={target:$('t21').checked?21:11, classic:$('classic').checked};
+    saveSettings(s); ui.menu=false; ui.started=true; newGame(s);
+  });
+  const r=$('resume'); if(r) r.addEventListener('click',()=>{ui.menu=false; render(); maybeAI();});
+}
+function summaryHTML(){
+  const m=S.summary, name=['dir','den Computer'];
+  const rows=m.rows.map(r=>`<tr><th>${r.label}</th>
+    <td class="${r.pts[0]?'win':''}">${r.a}${r.pts[0]?`<span class="pt">+${r.pts[0]}</span>`:''}</td>
+    <td class="${r.pts[1]?'win':''}">${r.b}${r.pts[1]?`<span class="pt">+${r.pts[1]}</span>`:''}</td></tr>`).join('');
+  const head = S.phase==='gameEnd'
+    ? (m.winner===0?'Gewonnen!':'Der Computer gewinnt')
+    : `Runde ${S.round} vorbei`;
+  const restNote = m.rest&&m.restTo!==null?`<p class="note">Die letzten ${m.rest} Tischkarten gingen an ${name[m.restTo]}.</p>`:'';
+  const tie = S.phase==='roundEnd'&&S.scores[0]===S.scores[1]&&S.scores[0]>=S.settings.target?'<p class="note">Gleichstand am Ziel, es geht weiter.</p>':'';
+  return `<div class="overlay"><div class="sheet" role="dialog" aria-label="${head}">
+    <h2>${head}</h2>
+    <table class="sum"><thead><tr><th></th><th>Du</th><th>Computer</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><th>Diese Runde</th><td>+${m.gained[0]}</td><td>+${m.gained[1]}</td></tr>
+      <tr class="total"><th>Gesamt</th><td>${S.scores[0]}</td><td>${S.scores[1]}</td></tr></tfoot></table>
+    ${restNote}${tie}
+    <div class="actions">${S.phase==='gameEnd'
+      ?'<button class="btn" type="button" id="toMenu">Menü</button><button class="btn primary" type="button" id="again">Nochmal spielen</button>'
+      :'<button class="btn primary" type="button" id="next">Nächste Runde</button>'}</div>
+  </div></div>`;
+}
+function bindSummary(){
+  const n=$('next'); if(n) n.addEventListener('click',startRound);
+  const a=$('again'); if(a) a.addEventListener('click',()=>newGame(S.settings));
+  const t=$('toMenu'); if(t) t.addEventListener('click',()=>{ui.menu=true; render();});
+}
+
+$('menuBtn').addEventListener('click',()=>{ui.menu=true; render();});
+
+/* ---------- boot (keeps a running game across page updates) ---------- */
+function start(data){
+  if(data&&data.S){ S=data.S; ui=data.ui||ui; if(S.pending){ const p=S.pending; S.pending=null; S.hand[p.p].push(p.card); } render(); maybeAI(); }
+  else { newGame(loadSettings()); }
+}
+window.claude?.hot?.snapshot?.(()=>({S,ui}));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
+
+</body>
+</html>
