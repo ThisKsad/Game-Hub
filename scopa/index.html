@@ -275,7 +275,7 @@ function cardSVG(c){
   if(c.v<=7){ const k=c.v===1?2.1:(c.v>=6?0.82:0.95); body=PIPS[c.v].map(([x,y])=>sym(c.s,x,y,k)).join(''); }
   else body=`<rect x="11" y="14" width="38" height="64" rx="3" fill="none" stroke="${col}" stroke-width="1" opacity=".4"/>${figure(c)}<text x="30" y="74.5" text-anchor="middle" ${f} font-size="${c.v===9?6:6.6}" fill="${col}">${RANK_NAME[c.v].toUpperCase()}</text>`;
   let vals='';
-  if(ui.values){
+  if(ui.values&&(c.v===1||c.v>=8)){
     const fs=c.v===10?6:7;
     const badge=(x,y)=>`<circle cx="${x}" cy="${y}" r="5.2" fill="${col}"/><text x="${x}" y="${y+fs*0.36}" text-anchor="middle" font-family="Alegreya Sans, system-ui, sans-serif" font-weight="700" font-size="${fs}" fill="#f6efdf">${c.v}</text>`;
     vals=badge(52,9)+badge(8,83);
@@ -521,7 +521,7 @@ function menuHTML(){
     <label class="check"><input type="checkbox" id="classic" ${s.classic?'checked':''}>
       <span><b>Klassische Primiera</b><small>Beste Karte jeder Farbe nach Punktwerten (7 = 21, 6 = 18, Ass = 16, 5 = 15 … Bildkarten = 10). Ohne Haken gewinnt, wer mehr Siebener hat, bei Gleichstand mehr Sechser, dann Asse.</small></span></label>
     <label class="check"><input type="checkbox" id="values" ${ui.values?'checked':''}>
-      <span><b>Spielwerte auf den Karten zeigen</b><small>Zeigt in den freien Ecken jeder Karte ihren Wert (Ass 1, Fante 8, Cavallo 9, Re 10). Gilt sofort, auch im laufenden Spiel.</small></span></label>
+      <span><b>Spielwerte auf den Karten zeigen</b><small>Zeigt bei Ass und Bildkarten den Wert in den freien Ecken (Ass 1, Fante 8, Cavallo 9, Re 10). Gilt sofort, auch im laufenden Spiel.</small></span></label>
     <div class="actions">
       ${ui.started?'<button class="btn" type="button" id="resume">Weiterspielen</button>':''}
       <button class="btn primary" type="submit">${ui.started?'Neues Spiel':'Spiel starten'}</button>
