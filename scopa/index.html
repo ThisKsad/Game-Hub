@@ -164,7 +164,7 @@ table.sum{width:100%; border-collapse:collapse; font-variant-numeric:tabular-num
 
 
 /* multi-player additions */
-:root{--cw-main:clamp(52px, 14.5vw, 82px); --team-a:#e0b25a; --team-b:#9fc6e8}
+:root{--cw-main:clamp(52px, 14.5vw, 82px); --cw-hand:clamp(66px, 19vw, 106px); --team-a:#e0b25a; --team-b:#9fc6e8}
 .score{flex-wrap:wrap; row-gap:2px}
 .sc{display:inline-flex; align-items:baseline; gap:6px}
 .sc.t0 em{color:var(--team-a)} .sc.t1 em{color:var(--team-b)}
@@ -180,7 +180,8 @@ table.sum{width:100%; border-collapse:collapse; font-variant-numeric:tabular-num
 .team.t0{border-color:var(--team-a); color:var(--team-a)}
 .team.t1{border-color:var(--team-b); color:var(--team-b)}
 .me{display:flex; gap:8px; align-items:center}
-.hand .back{--cw:var(--cw-main); border-width:3px}
+.hand{--cw:var(--cw-hand); align-items:flex-start}
+.hand .back{--cw:var(--cw-hand); border-width:3px}
 .seats .seat{display:grid; grid-template-columns:18px minmax(0,1fr) 7.4em 36px; gap:8px; align-items:center}
 .seats.teams .seat{grid-template-columns:18px minmax(0,1fr) 7.4em 36px auto}
 .seats select{width:100%}
