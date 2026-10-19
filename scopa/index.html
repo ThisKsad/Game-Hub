@@ -322,7 +322,7 @@ function loadSettings(){
     const o=s.seats&&s.seats[i];
     return {name:(o&&typeof o.name==='string'&&o.name.trim())||d.name, ai:o?!!o.ai:d.ai};
   });
-  return {target:s.target===21?21:11, classic:!!s.classic, values:s.values!==false, players:[2,3,4].includes(s.players)?s.players:2, seats};
+  return {target:s.target===21?21:11, classic:!!s.classic, values:s.values!==false, players:[2,3,4].includes(s.players)?s.players:2, teams:s.teams!==false, seats};
 }
 function saveSettings(s){ try{ localStorage.setItem('scopa-settings', JSON.stringify(s)); }catch(e){} }
 
@@ -352,11 +352,11 @@ const teamMembers=i=>S.players.filter(p=>p.side===i).map(p=>p.name).join(' + ');
 
 function newGame(settings){
   clearTimers();
-  const n=settings.players;
-  const players=settings.seats.slice(0,n).map((s,i)=>({name:s.name.trim()||('Spieler '+(i+1)), ai:!!s.ai, side:n===4?i%2:i}));
+  const n=settings.players, teams=n===4&&settings.teams!==false;
+  const players=settings.seats.slice(0,n).map((s,i)=>({name:s.name.trim()||('Spieler '+(i+1)), ai:!!s.ai, side:teams?i%2:i}));
   if(players.every(p=>p.ai)) players[0].ai=false;
-  const sides=n===4?2:n;
-  S={players, teams:n===4, sides, scores:Array(sides).fill(0), dealer:Math.floor(Math.random()*n), round:0, settings:{...settings}, phase:'play'};
+  const sides=teams?2:n;
+  S={players, teams, sides, scores:Array(sides).fill(0), dealer:Math.floor(Math.random()*n), round:0, settings:{...settings}, phase:'play'};
   startRound();
 }
 function startRound(){
@@ -641,12 +641,16 @@ function menuHTML(){
     </div>`).join('');
   return `<div class="overlay"><form class="sheet" id="menuForm">
     <h2>Scopa</h2>
-    <p>Für 2 bis 4 Spieler an einem Gerät. Freie Plätze übernimmt auf Wunsch der Computer.</p>
+    <p>Für 2 bis 4 Spieler an einem Gerät. Freie Plätze übernimmt auf Wunsch der Computer. Zu viert wahlweise in Teams oder jeder für sich.</p>
     <div class="field"><span>Spieler</span>
       <div class="seg">${[2,3,4].map(k=>`<label><input type="radio" name="players" id="p${k}" value="${k}" ${s.players===k?'checked':''}><span>${k}</span></label>`).join('')}</div>
     </div>
-    <div class="field seats ${s.players===4?'teams':''}" id="seats"><span>Plätze in Spielreihenfolge</span>${seatRows}
-      <p class="hint" id="teamHint" ${s.players===4?'':'hidden'}>Zu viert spielen Platz 1 und 3 (Team A) gegen Platz 2 und 4 (Team B).</p>
+    <div class="seg" id="modeSeg" ${s.players===4?'':'hidden'}>
+      <label><input type="radio" name="mode" id="mteam" value="team" ${s.teams?'checked':''}><span>Teams (2 gegen 2)</span></label>
+      <label><input type="radio" name="mode" id="msolo" value="solo" ${s.teams?'':'checked'}><span>Jeder für sich</span></label>
+    </div>
+    <div class="field seats ${s.players===4&&s.teams?'teams':''}" id="seats"><span>Plätze in Spielreihenfolge</span>${seatRows}
+      <p class="hint" id="teamHint" ${s.players===4&&s.teams?'':'hidden'}>Zu viert spielen Platz 1 und 3 (Team A) gegen Platz 2 und 4 (Team B).</p>
       <p class="hint" id="humanHint">Sind mehrere Menschen dabei, wird das Gerät reihum weitergegeben. Vor jedem Zug verdeckt ein Hinweis die Karten.</p>
     </div>
     <div class="field"><span>Gespielt wird bis</span>
@@ -676,16 +680,19 @@ function bindMenu(){
   const sync=()=>{
     const k=count();
     for(let i=0;i<4;i++) $('seat'+i).hidden=i>=k;
-    $('teamHint').hidden=k!==4;
-    $('seats').classList.toggle('teams',k===4);
+    const teamsOn=k===4&&$('mteam').checked;
+    $('modeSeg').hidden=k!==4;
+    $('teamHint').hidden=!teamsOn;
+    $('seats').classList.toggle('teams',teamsOn);
   };
   [2,3,4].forEach(k=>$('p'+k).addEventListener('change',sync));
+  ['mteam','msolo'].forEach(id=>$(id).addEventListener('change',sync));
   $('menuForm').addEventListener('submit',e=>{
     e.preventDefault();
     const players=count();
     const seats=[0,1,2,3].map(i=>({name:$('name'+i).value.trim()||DEFAULT_SEATS[i].name, ai:$('ai'+i).value==='1'}));
     if(seats.slice(0,players).every(x=>x.ai)) seats[0].ai=false;
-    const s={target:$('t21').checked?21:11, classic:$('classic').checked, values:$('values').checked, players, seats};
+    const s={target:$('t21').checked?21:11, classic:$('classic').checked, values:$('values').checked, players, teams:$('mteam').checked, seats};
     saveSettings(s); ui.menu=false; ui.started=true; ui.values=s.values;
     $('overlay').innerHTML='';
     newGame(s);

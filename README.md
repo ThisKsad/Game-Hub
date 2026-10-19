@@ -6,7 +6,7 @@ Unsere selbstgebauten Browser-Spiele. Jedes Spiel liegt in einem eigenen Ordner 
 
 | Spiel | Ordner | Stand |
 |---|---|---|
-| Scopa | [`scopa/`](scopa/) | 2–4 Spieler an einem Gerät (Plätze auch mit Computer), zu viert in Teams, Ziel 11 oder 21, einfache oder klassische Primiera |
+| Scopa | [`scopa/`](scopa/) | 2–4 Spieler an einem Gerät (Plätze auch mit Computer), zu viert in Teams oder jeder für sich, Ziel 11 oder 21, einfache oder klassische Primiera |
 
 ## Geplant
 
