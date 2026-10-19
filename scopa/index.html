@@ -186,6 +186,7 @@ table.sum{width:100%; border-collapse:collapse; font-variant-numeric:tabular-num
 .seats.teams [data-team]{display:inline-block}
 .seats .team.t0{color:#9a6a12; border-color:#d6b46a} .seats .team.t1{color:#2f5d8a; border-color:#9ab9d6}
 .hint{font-size:14px}
+.rulehint{font-size:14px; color:var(--brass) !important; font-style:italic}
 .seg.grid{display:grid; grid-template-columns:1fr 1fr}
 .custom{display:flex; flex-direction:column; gap:14px; padding:14px; border:1px solid #e0d5bb; border-radius:8px; background:#fbf6ea}
 .radios{display:flex; flex-direction:column; gap:10px}
@@ -326,12 +327,12 @@ const RETIRED=['Computer','Re Algoritmo','Mamma Mia 2.0','Bastoni-Bot','Luigi Lo
 const isCompName=n=>!n||RETIRED.includes(n)||COMP_NAMES.includes(n);
 const DEFAULT_SEATS=[{name:'Spieler 1',ai:false},{name:'Don Denari',ai:true},{name:'Spieler 3',ai:false},{name:'Spieler 4',ai:false}];
 const MODES={
-  house:{name:'Hausregeln', classic:false, ace:'eleven', teams:false, desc:'Einfache Primiera (mehr Siebener gewinnt), das Ass zählt beim Nehmen 1 oder 11, zu viert spielt jeder für sich.'},
-  classic:{name:'Klassisch', classic:true, ace:'one', teams:true, desc:'Primiera mit Punktwerten, das Ass zählt 1, zu viert zwei gegen zwei.'},
-  asso:{name:'Asso piglia tutto', classic:true, ace:'all', teams:true, desc:'Wie Klassisch, aber ein ausgespieltes Ass nimmt den ganzen Tisch. Das zählt nicht als Scopa.'},
+  house:{name:'Hausregeln', classic:false, ace:'eleven', teams:false, free:true, desc:'Einfache Primiera (mehr Siebener gewinnt), das Ass zählt beim Nehmen 1 oder 11, freie Wahl zwischen Einzelkarte und Kombination, zu viert spielt jeder für sich.'},
+  classic:{name:'Klassisch', classic:true, ace:'one', teams:true, free:false, desc:'Primiera mit Punktwerten, das Ass zählt 1, eine passende Einzelkarte hat Vorrang vor Kombinationen, zu viert zwei gegen zwei.'},
+  asso:{name:'Asso piglia tutto', classic:true, ace:'all', teams:true, free:false, desc:'Wie Klassisch, aber ein ausgespieltes Ass nimmt den ganzen Tisch. Das zählt nicht als Scopa.'},
   custom:{name:'Eigene Regeln', desc:'Stell die Regeln unten selbst zusammen.'}
 };
-function rulesOf(s){ const m=MODES[s.mode]; return (s.mode==='custom'||!m)?{...s.custom}:{classic:m.classic, ace:m.ace, teams:m.teams}; }
+function rulesOf(s){ const m=MODES[s.mode]; return (s.mode==='custom'||!m)?{...s.custom}:{classic:m.classic, ace:m.ace, teams:m.teams, free:m.free}; }
 function loadSettings(){
   let s={};
   try{ s=JSON.parse(localStorage.getItem('scopa-settings'))||{}; }catch(e){}
@@ -343,7 +344,7 @@ function loadSettings(){
     return {name, ai};
   });
   const c=s.custom||{};
-  const custom={classic:s.custom?!!c.classic:!!s.classic, ace:['one','eleven','all'].includes(c.ace)?c.ace:'one', teams:s.custom?c.teams!==false:s.teams!==false};
+  const custom={classic:s.custom?!!c.classic:!!s.classic, ace:['one','eleven','all'].includes(c.ace)?c.ace:'one', teams:s.custom?c.teams!==false:s.teams!==false, free:!!c.free};
   return {target:s.target===21?21:11, values:s.values!==false, players:[2,3,4].includes(s.players)?s.players:2, mode:MODES[s.mode]?s.mode:'house', custom, seats};
 }
 function saveSettings(s){ try{ localStorage.setItem('scopa-settings', JSON.stringify(s)); }catch(e){} }
@@ -396,12 +397,21 @@ function deal(){const n=N();for(let i=0;i<3;i++)for(let k=0;k<n;k++)S.hand[(S.de
 
 const aceRule=()=>(S&&S.settings&&S.settings.ace)||'one';
 const takesAll=card=>card.v===1&&aceRule()==='all';
+const freeRule=()=>!!(S&&S.settings&&S.settings.free);
+/* with "1 oder 11" a played ace may take cards that add up to 11 */
+const goalOf=card=>card.v===1&&aceRule()==='eleven'?11:card.v;
 function options(card,table){
   if(takesAll(card)) return table.length?[[...table]]:[];
-  const same=table.filter(t=>t.v===card.v);
-  if(same.length) return same.map(t=>[t]);
-  /* with "1 oder 11" a played ace may take cards that add up to 11 */
-  const goal=card.v===1&&aceRule()==='eleven'?11:card.v;
+  const same=table.filter(t=>t.v===card.v).map(t=>[t]);
+  if(same.length&&!freeRule()) return same;
+  return [...same, ...combos(goalOf(card),table)];
+}
+/* combinations that the single-card rule forbids right now (shown as a hint) */
+function blockedCombos(card,table){
+  if(freeRule()||takesAll(card)||!table.some(t=>t.v===card.v)) return [];
+  return combos(goalOf(card),table);
+}
+function combos(goal,table){
   const res=[], n=table.length;
   for(let m=1;m<(1<<n);m++){
     if((m&(m-1))===0) continue;
@@ -626,6 +636,10 @@ function render(skipOverlay){
     else if(selOpts.length===1) o=`<button class="btn primary" data-o="0" type="button">${takesAll(S.hand[S.turn].find(c=>c.id===S.sel))?`Ganzen Tisch nehmen (${selOpts[0].length} Karten)`:'Nehmen: '+selOpts[0].map(nm).join(' + ')}</button>`;
     else o=`<p>Wähle, was du nimmst:</p>`+selOpts.map((op,i)=>`<button class="btn" data-o="${i}" type="button">${op.map(nm).join(' + ')}</button>`).join('');
   } else if(myTurn) o=`<p>Tippe eine Karte an. Zweimal tippen spielt sie direkt.</p>`;
+  if(myTurn&&S.sel){
+    const card=S.hand[S.turn].find(c=>c.id===S.sel), blocked=card?blockedCombos(card,S.table):[];
+    if(blocked.length) o+=`<p class="rulehint">${blocked.length===1?'Die Kombination':'Die Kombinationen'} ${blocked.map(b=>b.map(c=>RANK_NAME[c.v]||c.v).join(' + ')).join(' oder ')} ${blocked.length===1?'ist':'sind'} nicht erlaubt, weil eine passende Einzelkarte auf dem Tisch liegt.</p>`;
+  }
   $('opts').innerHTML=o;
   $('opts').querySelectorAll('button').forEach(b=>{
     const i=+b.dataset.o, op=selOpts[i];
@@ -692,6 +706,8 @@ function menuHTML(){
           <label class="check"><input type="radio" name="ace" id="ace-eleven" ${c.ace==='eleven'?'checked':''}><span><b>Zählt 1 oder 11</b><small>Ein ausgespieltes Ass darf Karten nehmen, die zusammen 11 ergeben (z. B. 5 + 6). Liegt ein Ass auf dem Tisch, muss es zuerst dieses nehmen.</small></span></label>
           <label class="check"><input type="radio" name="ace" id="ace-all" ${c.ace==='all'?'checked':''}><span><b>Asso piglia tutto</b><small>Ein ausgespieltes Ass nimmt den ganzen Tisch. Das zählt nicht als Scopa.</small></span></label>
         </div></div>
+      <label class="check"><input type="checkbox" id="free" ${c.free?'checked':''}>
+        <span><b>Freie Wahl beim Nehmen</b><small>Liegt eine passende Einzelkarte und eine passende Kombination auf dem Tisch, darfst du wählen. Ohne Haken hat die Einzelkarte Vorrang.</small></span></label>
       <div class="field" id="teamsField" ${s.players===4?'':'hidden'}><span>Zu viert</span>
         <div class="seg">
           <label><input type="radio" name="teams" id="mteam" ${c.teams?'checked':''}><span>Teams (2 gegen 2)</span></label>
@@ -711,7 +727,7 @@ function menuHTML(){
     </div>
     <details><summary>Regeln kurz</summary><ul>
       <li>Jeder hat 3 Karten, zu Beginn liegen 4 offen auf dem Tisch.</li>
-      <li>Spiele eine Karte: Nimm eine Tischkarte mit gleichem Wert oder mehrere, deren Summe passt. Eine einzelne passende Karte hat Vorrang.</li>
+      <li>Spiele eine Karte: Nimm eine Tischkarte mit gleichem Wert oder mehrere, deren Summe passt. Eine einzelne passende Karte hat Vorrang, außer der Modus erlaubt freie Wahl.</li>
       <li>Wer den Tisch abräumt, macht eine Scopa (1 Punkt), außer mit dem letzten Zug der Runde.</li>
       <li>Je 1 Punkt für meiste Karten, meiste Denari, Settebello (7 di Denari) und Primiera. Bei Gleichstand gibt es keinen Punkt.</li>
       <li>Werte: Ass 1, 2–7, Fante 8, Cavallo 9, Re 10. Die Modi ändern, was das Ass kann.</li>
@@ -721,7 +737,7 @@ function menuHTML(){
 function bindMenu(){
   const count=()=>[2,3,4].find(k=>$('p'+k).checked);
   const mode=()=>Object.keys(MODES).find(k=>$('mode-'+k).checked);
-  const customRules=()=>({classic:$('classic').checked, ace:$('ace-all').checked?'all':$('ace-eleven').checked?'eleven':'one', teams:$('mteam').checked});
+  const customRules=()=>({classic:$('classic').checked, ace:$('ace-all').checked?'all':$('ace-eleven').checked?'eleven':'one', teams:$('mteam').checked, free:$('free').checked});
   const sync=()=>{
     const k=count(), m=mode();
     for(let i=0;i<4;i++) $('seat'+i).hidden=i>=k;
