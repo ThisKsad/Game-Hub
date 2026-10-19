@@ -6,7 +6,7 @@ Unsere selbstgebauten Browser-Spiele. Jedes Spiel liegt in einem eigenen Ordner 
 
 | Spiel | Ordner | Stand |
 |---|---|---|
-| Scopa | [`scopa/`](scopa/) | 2–4 Spieler an einem Gerät oder online per Raum-Code (freie Plätze übernimmt der Computer), Modi: Hausregeln, Klassisch, Asso piglia tutto, eigene Regeln |
+| Scopa | [`scopa/`](scopa/) | 2–4 Spieler an einem Gerät oder online per Raum-Code (freie Plätze übernimmt der Computer), Modi: Hausregeln, Klassisch, Asso piglia tutto, eigene Regeln; Deutsch, Englisch, Portugiesisch (BR) |
 
 ## Geplant
 

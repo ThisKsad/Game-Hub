@@ -211,6 +211,12 @@ table.sum{width:100%; border-collapse:collapse; font-variant-numeric:tabular-num
 .seats.teams [data-team]{display:inline-block}
 .seats .team.t0{color:#9a6a12; border-color:#d6b46a} .seats .team.t1{color:#2f5d8a; border-color:#9ab9d6}
 .hint{font-size:14px}
+.menuhead{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+.langs{display:flex; border:1px solid #cdbf9f; border-radius:999px; overflow:hidden}
+.lang{font:inherit; font-size:13px; font-weight:700; letter-spacing:.04em; padding:5px 11px; border:0; background:transparent; color:var(--ink-soft); cursor:pointer}
+.lang + .lang{border-left:1px solid #cdbf9f}
+.lang.on{background:var(--wine); color:var(--cream)}
+.lang:focus-visible{outline:3px solid var(--brass); outline-offset:-3px}
 .sheet input[type=text]{font:inherit; padding:8px 10px; border:1px solid #cdbf9f; border-radius:6px; background:#fffaf0; color:var(--ink); min-width:0}
 .sheet input[type=text]:focus-visible{outline:3px solid var(--brass); outline-offset:1px}
 .online{display:flex; flex-direction:column; gap:8px}
@@ -343,6 +349,233 @@ const RANK_SHORT={1:'A',8:'F',9:'C',10:'R'};
 const SUIT_COLOR={D:'#b8860b',C:'#a8322a',S:'#2f5d8a',B:'#3d7a3a'};
 const PV={7:21,6:18,1:16,5:15,4:14,3:13,2:12,8:10,9:10,10:10};
 const nm=c=>`${RANK_NAME[c.v]||c.v} di ${SUIT_NAME[c.s]}`;
+/* ---------- languages ---------- */
+const LANGS={de:'Deutsch', en:'English', pt:'Português (BR)'};
+const I18N={
+de:{
+  you:"Du", youObj:"dich", team:"Team {x}", teamWord:"Team ", computer:"Computer", menu:"Menü", upTo:"bis {n}", noCards:"keine Karten",
+  collected:"Gesammelt", pileAria:"Gesammelt: {n} Karten", deckAria:"Stapel: {n} Karten", tableEmpty:"Der Tisch ist leer.",
+  modeChip:"Modus: {m}", teamChip:"Team {x}: {m}", replace:"Computer übernimmt", scopaPoint:"Punkt für {who}",
+  ariaOpps:"Mitspieler", ariaTable:"Tisch", ariaHand:"Karten auf der Hand", player:"Spieler {n}",
+  cantTake:"Mit dieser Karte kannst du nichts nehmen.", placeOnTable:"Auf den Tisch legen", takeAll:"Ganzen Tisch nehmen ({n} Karten)",
+  take:"Nehmen: {c}", chooseTake:"Wähle, was du nimmst:", tapHint:"Tippe eine Karte an. Zweimal tippen spielt sie direkt.",
+  blocked1:"Die Kombination {c} ist nicht erlaubt, weil eine passende Einzelkarte auf dem Tisch liegt.",
+  blockedN:"Die Kombinationen {c} sind nicht erlaubt, weil eine passende Einzelkarte auf dem Tisch liegt.", or:"oder",
+  startsYou:"Du beginnst. Wähle eine Karte.", starts:"{who} beginnt.", yourTurn:"Du bist dran.", theirTurn:"{who} ist dran.", roundOver:"Runde vorbei.",
+  mvTakeYou:"Du spielst {card} und nimmst {taken}.", mvTake:"{who} spielt {card} und nimmt {taken}.",
+  mvAllYou:"Du spielst {card} und nimmst den ganzen Tisch ({n} Karten). Asso piglia tutto!", mvAll:"{who} spielt {card} und nimmt den ganzen Tisch ({n} Karten). Asso piglia tutto!",
+  mvPlaceYou:"Du legst {card} auf den Tisch.", mvPlace:"{who} legt {card} auf den Tisch.",
+  rowCards:"Karten", rowDenari:"Denari", rowSettebello:"Settebello", rowPrimiera:"Primiera", rowScope:"Scope", missingSuit:"Farbe fehlt",
+  winsTeam:"Team {x} gewinnt", youWon:"Gewonnen!", wins:"{who} gewinnt", roundEnded:"Runde {n} vorbei",
+  restNote:"Die letzten {n} Tischkarten gingen an {who}.", tieGoesOn:"Gleichstand an der Spitze, es geht weiter.", canRestart:"{who} kann eine neue Partie starten.",
+  thisRound:"Diese Runde", total:"Gesamt", leaveRoom:"Raum verlassen", playAgain:"Nochmal spielen", nextRound:"Nächste Runde",
+  coverTitle:"{who} ist dran", coverText:"Gib das Gerät an {who}. Alle anderen schauen bitte weg.", sinceStart:"Bisher in dieser Runde", sinceLast:"Seit deinem letzten Zug", reveal:"Karten aufdecken",
+  intro:"Für 2 bis 4 Spieler, an einem Gerät oder online. Freie Plätze übernimmt auf Wunsch der Computer.", language:"Sprache",
+  oneDevice:"An einem Gerät", online:"Online", players:"Spieler", seatsOrder:"Plätze in Spielreihenfolge", seatName:"Name Platz {n}", seatBy:"Platz {n} besetzt durch",
+  human:"Mensch", reroll:"Anderen Namen würfeln", teamHint:"Zu viert spielen Platz 1 und 3 (Team A) gegen Platz 2 und 4 (Team B).",
+  passHint:"Sind mehrere Menschen dabei, wird das Gerät reihum weitergegeben. Vor jedem Zug verdeckt ein Hinweis die Karten.",
+  playOnline:"Online spielen", yourName:"Dein Name", onlineHint:"Jeder spielt am eigenen Gerät. Erstelle einen Raum mit Spielerzahl und Modus von hier, oder tritt mit dem Code eines Mitspielers bei.",
+  code:"Code", roomCode:"Raum-Code", join:"Beitreten", gameMode:"Spielmodus",
+  classicPrim:"Klassische Primiera", classicPrimHint:"Beste Karte jeder Farbe nach Punktwerten (7 = 21, 6 = 18, Ass = 16, 5 = 15 … Bildkarten = 10). Ohne Haken gewinnt, wer mehr Siebener hat, bei Gleichstand mehr Sechser, dann Asse.",
+  ace:"Ass", aceOne:"Zählt 1", aceOneHint:"Standardregel.", aceEleven:"Zählt 1 oder 11",
+  aceElevenHint:"Ein ausgespieltes Ass darf Karten nehmen, die zusammen 11 ergeben (z. B. 5 + 6). Liegt ein Ass auf dem Tisch, muss es zuerst dieses nehmen.",
+  aceAllHint:"Ein ausgespieltes Ass nimmt den ganzen Tisch. Das zählt nicht als Scopa.",
+  free:"Freie Wahl beim Nehmen", freeHint:"Liegt eine passende Einzelkarte und eine passende Kombination auf dem Tisch, darfst du wählen. Ohne Haken hat die Einzelkarte Vorrang.",
+  withFour:"Zu viert", teams2v2:"Teams (2 gegen 2)", solo:"Jeder für sich", playTo:"Gespielt wird bis", points:"{n} Punkte",
+  animLbl:"Animationen beim Austeilen", animHint:"Die Karten fliegen vom Stapel auf den Tisch und zu den Spielern. Gilt sofort.",
+  valuesLbl:"Spielwerte auf den Karten zeigen", valuesHint:"Zeigt bei Ass und Bildkarten den Wert in den freien Ecken (Ass 1, Fante 8, Cavallo 9, Re 10). Gilt sofort, auch im laufenden Spiel.",
+  resume:"Weiterspielen", createRoom:"Raum erstellen", newGame:"Neues Spiel", startGame:"Spiel starten", rulesShort:"Regeln kurz",
+  rule1:"Jeder hat 3 Karten, zu Beginn liegen 4 offen auf dem Tisch.",
+  rule2:"Spiele eine Karte: Nimm eine Tischkarte mit gleichem Wert oder mehrere, deren Summe passt. Eine einzelne passende Karte hat Vorrang, außer der Modus erlaubt freie Wahl.",
+  rule3:"Wer den Tisch abräumt, macht eine Scopa (1 Punkt), außer mit dem letzten Zug der Runde.",
+  rule4:"Je 1 Punkt für meiste Karten, meiste Denari, Settebello (7 di Denari) und Primiera. Bei Gleichstand gibt es keinen Punkt.",
+  rule5:"Werte: Ass 1, 2–7, Fante 8, Cavallo 9, Re 10. Die Modi ändern, was das Ass kann.",
+  nameFirst:"Trag zuerst deinen Namen ein.", codeFour:"Der Raum-Code hat vier Buchstaben.",
+  modeHouse:"Hausregeln", modeHouseDesc:"Einfache Primiera (mehr Siebener gewinnt), das Ass zählt beim Nehmen 1 oder 11, freie Wahl zwischen Einzelkarte und Kombination, zu viert spielt jeder für sich.",
+  modeClassic:"Klassisch", modeClassicDesc:"Primiera mit Punktwerten, das Ass zählt 1, eine passende Einzelkarte hat Vorrang vor Kombinationen, zu viert zwei gegen zwei.",
+  modeAsso:"Asso piglia tutto", modeAssoDesc:"Wie Klassisch, aber ein ausgespieltes Ass nimmt den ganzen Tisch. Das zählt nicht als Scopa.",
+  modeCustom:"Eigene Regeln", modeCustomDesc:"Stell die Regeln unten selbst zusammen.",
+  waitingRoom:"Warteraum", lobbyIntro:"Teile den Code oder den Link mit deinen Mitspielern. Sie öffnen das Spiel, wählen „Online“ und treten bei.",
+  copyCode:"Code kopieren", copyLink:"Link kopieren", copiedCode:"Code kopiert.", copiedLink:"Link kopiert.", linkSelected:"Link markiert, jetzt kopieren.",
+  seatsHead:"Plätze · {m} · bis {n}", host:"Gastgeber", freeSeat:"Freier Platz", release:"Freigeben",
+  openSeats1:"Noch 1 Platz frei. Beim Start übernimmt dort der Computer.", openSeatsN:"Noch {n} Plätze frei. Beim Start übernimmt dort der Computer.",
+  allSeated:"Alle Plätze sind besetzt.", waitHost:"Warten, bis {who} das Spiel startet.",
+  netErr:"Keine Verbindung zum Server. Online spielen geht über thisksad.github.io/Game-Hub/scopa/ und braucht Internet.",
+  badResponse:"Unerwartete Antwort vom Server.", serverErr:"Serverfehler, bitte nochmal versuchen.", loadErr:"Serverfehler beim Laden.",
+  roomGone:"Diesen Raum gibt es nicht mehr.", seatLost:"Dein Platz in diesem Raum ist nicht mehr gültig, zum Beispiel weil der Computer ihn übernommen hat.",
+  e_noRoom:"Diesen Raum gibt es nicht (mehr). Prüf den Code.", e_started:"In diesem Raum läuft das Spiel schon.", e_full:"Der Raum ist schon voll.",
+  e_notInRoom:"Du sitzt nicht in diesem Raum.", e_hostOnly:"Das darf nur der Gastgeber.", e_noSeat:"Diesen Platz gibt es nicht.",
+  e_seatTaken:"Auf diesem Platz sitzt schon jemand.", e_noRound:"Gerade läuft keine Runde.", e_notTurn:"Du bist nicht dran.",
+  e_noCard:"Diese Karte hast du nicht auf der Hand.", e_badTake:"Diese Karten darfst du mit dieser Karte nicht nehmen.",
+  e_mustTake:"Mit dieser Karte musst du etwas vom Tisch nehmen.", e_conflict:"Jemand anderes war schneller. Versuch es gleich nochmal.",
+  e_cantReplace:"Diesen Platz kann der Computer nicht übernehmen.", e_noCode:"Konnte keinen freien Raum-Code finden. Versuch es nochmal."
+},
+en:{
+  you:"You", youObj:"you", team:"Team {x}", teamWord:"Team ", computer:"Computer", menu:"Menu", upTo:"to {n}", noCards:"no cards",
+  collected:"Captured", pileAria:"Captured: {n} cards", deckAria:"Deck: {n} cards", tableEmpty:"The table is empty.",
+  modeChip:"Mode: {m}", teamChip:"Team {x}: {m}", replace:"Computer takes over", scopaPoint:"Point for {who}",
+  ariaOpps:"Other players", ariaTable:"Table", ariaHand:"Your hand", player:"Player {n}",
+  cantTake:"You can't take anything with this card.", placeOnTable:"Put on the table", takeAll:"Take the whole table ({n} cards)",
+  take:"Take: {c}", chooseTake:"Choose what to take:", tapHint:"Tap a card. Tap it twice to play it right away.",
+  blocked1:"The combination {c} is not allowed because a matching single card is on the table.",
+  blockedN:"The combinations {c} are not allowed because a matching single card is on the table.", or:"or",
+  startsYou:"You start. Pick a card.", starts:"{who} starts.", yourTurn:"Your turn.", theirTurn:"{who}'s turn.", roundOver:"Round over.",
+  mvTakeYou:"You play {card} and take {taken}.", mvTake:"{who} plays {card} and takes {taken}.",
+  mvAllYou:"You play {card} and take the whole table ({n} cards). Asso piglia tutto!", mvAll:"{who} plays {card} and takes the whole table ({n} cards). Asso piglia tutto!",
+  mvPlaceYou:"You put {card} on the table.", mvPlace:"{who} puts {card} on the table.",
+  rowCards:"Cards", rowDenari:"Denari", rowSettebello:"Settebello", rowPrimiera:"Primiera", rowScope:"Scope", missingSuit:"Suit missing",
+  winsTeam:"Team {x} wins", youWon:"You won!", wins:"{who} wins", roundEnded:"Round {n} over",
+  restNote:"The last {n} table cards went to {who}.", tieGoesOn:"Tied for the lead, play continues.", canRestart:"{who} can start a new game.",
+  thisRound:"This round", total:"Total", leaveRoom:"Leave room", playAgain:"Play again", nextRound:"Next round",
+  coverTitle:"{who}'s turn", coverText:"Pass the device to {who}. Everyone else, please look away.", sinceStart:"So far this round", sinceLast:"Since your last move", reveal:"Show my cards",
+  intro:"For 2 to 4 players, on one device or online. The computer can fill empty seats.", language:"Language",
+  oneDevice:"One device", online:"Online", players:"Players", seatsOrder:"Seats in turn order", seatName:"Name, seat {n}", seatBy:"Seat {n} taken by",
+  human:"Human", reroll:"Roll another name", teamHint:"With four, seats 1 and 3 (Team A) play against seats 2 and 4 (Team B).",
+  passHint:"With several people, pass the device around. Before each move a screen hides the cards.",
+  playOnline:"Play online", yourName:"Your name", onlineHint:"Everyone plays on their own device. Create a room with the player count and mode chosen here, or join with a friend's code.",
+  code:"Code", roomCode:"Room code", join:"Join", gameMode:"Game mode",
+  classicPrim:"Classic primiera", classicPrimHint:"Best card of each suit by point value (7 = 21, 6 = 18, ace = 16, 5 = 15 … face cards = 10). Unchecked: whoever has more sevens wins, on a tie more sixes, then aces.",
+  ace:"Ace", aceOne:"Counts 1", aceOneHint:"Standard rule.", aceEleven:"Counts 1 or 11",
+  aceElevenHint:"A played ace may take cards that add up to 11 (e.g. 5 + 6). If an ace is on the table, it must take that one first.",
+  aceAllHint:"A played ace takes the whole table. This does not count as a scopa.",
+  free:"Free choice when taking", freeHint:"If both a matching single card and a matching combination are on the table, you may choose. Unchecked: the single card comes first.",
+  withFour:"With four", teams2v2:"Teams (2 vs 2)", solo:"Each for themselves", playTo:"Play to", points:"{n} points",
+  animLbl:"Dealing animations", animHint:"Cards fly from the deck to the table and to the players. Applies right away.",
+  valuesLbl:"Show card values", valuesHint:"Shows the value of aces and face cards in the free corners (Asso 1, Fante 8, Cavallo 9, Re 10). Applies right away, even mid-game.",
+  resume:"Continue", createRoom:"Create room", newGame:"New game", startGame:"Start game", rulesShort:"Quick rules",
+  rule1:"Everyone holds 3 cards; at the start 4 cards lie face up on the table.",
+  rule2:"Play a card: take a table card of the same value, or several whose sum matches. A matching single card comes first unless the mode allows free choice.",
+  rule3:"Clearing the table is a scopa (1 point), except with the last move of the round.",
+  rule4:"1 point each for most cards, most Denari, the Settebello (7 di Denari) and the Primiera. On a tie nobody gets the point.",
+  rule5:"Values: ace 1, 2–7, Fante 8, Cavallo 9, Re 10. The modes change what the ace can do.",
+  nameFirst:"Enter your name first.", codeFour:"The room code has four letters.",
+  modeHouse:"House rules", modeHouseDesc:"Simple primiera (more sevens wins), the ace counts 1 or 11 when taking, free choice between a single card and a combination, with four everyone plays for themselves.",
+  modeClassic:"Classic", modeClassicDesc:"Primiera by point values, the ace counts 1, a matching single card comes before combinations, with four it's two against two.",
+  modeAsso:"Asso piglia tutto", modeAssoDesc:"Like Classic, but a played ace takes the whole table. This does not count as a scopa.",
+  modeCustom:"Custom rules", modeCustomDesc:"Set the rules yourself below.",
+  waitingRoom:"Waiting room", lobbyIntro:"Share the code or the link with your friends. They open the game, choose “Online” and join.",
+  copyCode:"Copy code", copyLink:"Copy link", copiedCode:"Code copied.", copiedLink:"Link copied.", linkSelected:"Link selected, copy it now.",
+  seatsHead:"Seats · {m} · to {n}", host:"Host", freeSeat:"Free seat", release:"Free up",
+  openSeats1:"1 seat still free. The computer takes it when the game starts.", openSeatsN:"{n} seats still free. The computer takes them when the game starts.",
+  allSeated:"All seats are taken.", waitHost:"Waiting for {who} to start the game.",
+  netErr:"No connection to the server. Online play works at thisksad.github.io/Game-Hub/scopa/ and needs internet.",
+  badResponse:"Unexpected response from the server.", serverErr:"Server error, please try again.", loadErr:"Server error while loading.",
+  roomGone:"This room no longer exists.", seatLost:"Your seat in this room is no longer valid, for example because the computer took it over.",
+  e_noRoom:"This room doesn't exist (anymore). Check the code.", e_started:"The game in this room has already started.", e_full:"The room is already full.",
+  e_notInRoom:"You're not seated in this room.", e_hostOnly:"Only the host can do that.", e_noSeat:"That seat doesn't exist.",
+  e_seatTaken:"Someone is already in that seat.", e_noRound:"No round is running right now.", e_notTurn:"It's not your turn.",
+  e_noCard:"You don't have that card.", e_badTake:"You can't take those cards with this card.",
+  e_mustTake:"With this card you have to take something from the table.", e_conflict:"Someone else was faster. Try again in a moment.",
+  e_cantReplace:"The computer can't take over this seat.", e_noCode:"Couldn't find a free room code. Please try again."
+},
+pt:{
+  you:"Você", youObj:"você", team:"Time {x}", teamWord:"Time ", computer:"Computador", menu:"Menu", upTo:"até {n}", noCards:"sem cartas",
+  collected:"Capturadas", pileAria:"Capturadas: {n} cartas", deckAria:"Monte: {n} cartas", tableEmpty:"A mesa está vazia.",
+  modeChip:"Modo: {m}", teamChip:"Time {x}: {m}", replace:"Computador assume", scopaPoint:"Ponto para {who}",
+  ariaOpps:"Outros jogadores", ariaTable:"Mesa", ariaHand:"Sua mão", player:"Jogador {n}",
+  cantTake:"Com esta carta você não pode pegar nada.", placeOnTable:"Colocar na mesa", takeAll:"Pegar a mesa inteira ({n} cartas)",
+  take:"Pegar: {c}", chooseTake:"Escolha o que pegar:", tapHint:"Toque em uma carta. Toque duas vezes para jogá-la direto.",
+  blocked1:"A combinação {c} não é permitida porque há uma carta igual sozinha na mesa.",
+  blockedN:"As combinações {c} não são permitidas porque há uma carta igual sozinha na mesa.", or:"ou",
+  startsYou:"Você começa. Escolha uma carta.", starts:"{who} começa.", yourTurn:"Sua vez.", theirTurn:"Vez de {who}.", roundOver:"Fim da rodada.",
+  mvTakeYou:"Você joga {card} e pega {taken}.", mvTake:"{who} joga {card} e pega {taken}.",
+  mvAllYou:"Você joga {card} e pega a mesa inteira ({n} cartas). Asso piglia tutto!", mvAll:"{who} joga {card} e pega a mesa inteira ({n} cartas). Asso piglia tutto!",
+  mvPlaceYou:"Você coloca {card} na mesa.", mvPlace:"{who} coloca {card} na mesa.",
+  rowCards:"Cartas", rowDenari:"Denari", rowSettebello:"Settebello", rowPrimiera:"Primiera", rowScope:"Scope", missingSuit:"Falta naipe",
+  winsTeam:"Time {x} vence", youWon:"Você venceu!", wins:"{who} vence", roundEnded:"Fim da rodada {n}",
+  restNote:"As últimas {n} cartas da mesa foram para {who}.", tieGoesOn:"Empate na liderança, o jogo continua.", canRestart:"{who} pode começar uma nova partida.",
+  thisRound:"Esta rodada", total:"Total", leaveRoom:"Sair da sala", playAgain:"Jogar de novo", nextRound:"Próxima rodada",
+  coverTitle:"Vez de {who}", coverText:"Passe o aparelho para {who}. Os outros, por favor, não olhem.", sinceStart:"Até agora nesta rodada", sinceLast:"Desde a sua última jogada", reveal:"Mostrar minhas cartas",
+  intro:"Para 2 a 4 jogadores, em um aparelho ou online. O computador pode ocupar os lugares vagos.", language:"Idioma",
+  oneDevice:"Um aparelho", online:"Online", players:"Jogadores", seatsOrder:"Lugares na ordem de jogo", seatName:"Nome, lugar {n}", seatBy:"Lugar {n} ocupado por",
+  human:"Pessoa", reroll:"Sortear outro nome", teamHint:"Com quatro, os lugares 1 e 3 (Time A) jogam contra os lugares 2 e 4 (Time B).",
+  passHint:"Com várias pessoas, o aparelho passa de mão em mão. Antes de cada jogada uma tela esconde as cartas.",
+  playOnline:"Jogar online", yourName:"Seu nome", onlineHint:"Cada um joga no próprio aparelho. Crie uma sala com o número de jogadores e o modo escolhidos aqui, ou entre com o código de um amigo.",
+  code:"Código", roomCode:"Código da sala", join:"Entrar", gameMode:"Modo de jogo",
+  classicPrim:"Primiera clássica", classicPrimHint:"Melhor carta de cada naipe pelo valor em pontos (7 = 21, 6 = 18, ás = 16, 5 = 15 … figuras = 10). Desmarcado: vence quem tem mais setes; em caso de empate, mais seis, depois ases.",
+  ace:"Ás", aceOne:"Vale 1", aceOneHint:"Regra padrão.", aceEleven:"Vale 1 ou 11",
+  aceElevenHint:"Um ás jogado pode pegar cartas que somam 11 (ex.: 5 + 6). Se houver um ás na mesa, ele precisa pegá-lo primeiro.",
+  aceAllHint:"Um ás jogado pega a mesa inteira. Isso não conta como scopa.",
+  free:"Escolha livre ao pegar", freeHint:"Se houver na mesa uma carta igual e uma combinação com a mesma soma, você pode escolher. Desmarcado: a carta sozinha tem prioridade.",
+  withFour:"Com quatro", teams2v2:"Times (2 contra 2)", solo:"Cada um por si", playTo:"Jogar até", points:"{n} pontos",
+  animLbl:"Animações ao distribuir", animHint:"As cartas voam do monte para a mesa e para os jogadores. Vale na hora.",
+  valuesLbl:"Mostrar valores nas cartas", valuesHint:"Mostra o valor dos ases e das figuras nos cantos livres (Asso 1, Fante 8, Cavallo 9, Re 10). Vale na hora, mesmo durante o jogo.",
+  resume:"Continuar", createRoom:"Criar sala", newGame:"Novo jogo", startGame:"Começar jogo", rulesShort:"Regras rápidas",
+  rule1:"Cada um tem 3 cartas; no início 4 cartas ficam abertas na mesa.",
+  rule2:"Jogue uma carta: pegue uma carta da mesa de mesmo valor, ou várias cuja soma dê o valor. Uma carta igual sozinha tem prioridade, a não ser que o modo permita escolha livre.",
+  rule3:"Quem limpa a mesa faz uma scopa (1 ponto), exceto na última jogada da rodada.",
+  rule4:"1 ponto cada para mais cartas, mais Denari, o Settebello (7 di Denari) e a Primiera. Em caso de empate ninguém pontua.",
+  rule5:"Valores: ás 1, 2–7, Fante 8, Cavallo 9, Re 10. Os modos mudam o que o ás pode fazer.",
+  nameFirst:"Digite seu nome primeiro.", codeFour:"O código da sala tem quatro letras.",
+  modeHouse:"Regras da casa", modeHouseDesc:"Primiera simples (vence quem tem mais setes), o ás vale 1 ou 11 ao pegar, escolha livre entre carta sozinha e combinação, com quatro cada um joga por si.",
+  modeClassic:"Clássico", modeClassicDesc:"Primiera por valores em pontos, o ás vale 1, uma carta igual sozinha tem prioridade sobre combinações, com quatro é dois contra dois.",
+  modeAsso:"Asso piglia tutto", modeAssoDesc:"Como o Clássico, mas um ás jogado pega a mesa inteira. Isso não conta como scopa.",
+  modeCustom:"Regras próprias", modeCustomDesc:"Defina as regras abaixo.",
+  waitingRoom:"Sala de espera", lobbyIntro:"Compartilhe o código ou o link com seus amigos. Eles abrem o jogo, escolhem “Online” e entram.",
+  copyCode:"Copiar código", copyLink:"Copiar link", copiedCode:"Código copiado.", copiedLink:"Link copiado.", linkSelected:"Link selecionado, copie agora.",
+  seatsHead:"Lugares · {m} · até {n}", host:"Anfitrião", freeSeat:"Lugar livre", release:"Liberar",
+  openSeats1:"Ainda há 1 lugar livre. Ao começar, o computador o ocupa.", openSeatsN:"Ainda há {n} lugares livres. Ao começar, o computador os ocupa.",
+  allSeated:"Todos os lugares estão ocupados.", waitHost:"Esperando {who} começar o jogo.",
+  netErr:"Sem conexão com o servidor. O jogo online funciona em thisksad.github.io/Game-Hub/scopa/ e precisa de internet.",
+  badResponse:"Resposta inesperada do servidor.", serverErr:"Erro no servidor, tente novamente.", loadErr:"Erro do servidor ao carregar.",
+  roomGone:"Esta sala não existe mais.", seatLost:"Seu lugar nesta sala não é mais válido, por exemplo porque o computador assumiu.",
+  e_noRoom:"Esta sala não existe (mais). Confira o código.", e_started:"O jogo nesta sala já começou.", e_full:"A sala já está cheia.",
+  e_notInRoom:"Você não está nesta sala.", e_hostOnly:"Só o anfitrião pode fazer isso.", e_noSeat:"Esse lugar não existe.",
+  e_seatTaken:"Alguém já está nesse lugar.", e_noRound:"Nenhuma rodada em andamento.", e_notTurn:"Não é a sua vez.",
+  e_noCard:"Você não tem essa carta.", e_badTake:"Você não pode pegar essas cartas com esta carta.",
+  e_mustTake:"Com esta carta você precisa pegar algo da mesa.", e_conflict:"Alguém foi mais rápido. Tente de novo em instantes.",
+  e_cantReplace:"O computador não pode assumir este lugar.", e_noCode:"Não foi possível encontrar um código livre. Tente de novo."
+}};
+function detectLang(){
+  try{ const s=JSON.parse(localStorage.getItem('scopa-settings'))||{}; if(LANGS[s.lang]) return s.lang; }catch(e){}
+  const n=(navigator.language||'de').toLowerCase();
+  return n.startsWith('pt')?'pt':n.startsWith('en')?'en':n.startsWith('de')?'de':'en';
+}
+let LANG=detectLang();
+function t(k,v){
+  let s=I18N[LANG]&&I18N[LANG][k];
+  if(s===undefined) s=I18N.de[k];
+  if(s===undefined) return k;
+  return v?s.replace(/\{(\w+)\}/g,(_,x)=>v[x]!==undefined?v[x]:''):s;
+}
+const DEFAULT_NAME_RE=/^(Spieler|Player|Jogador) \d$/;
+const modeName=k=>t({house:'modeHouse',classic:'modeClassic',asso:'modeAsso',custom:'modeCustom'}[k]||'modeHouse');
+const modeDesc=k=>t({house:'modeHouseDesc',classic:'modeClassicDesc',asso:'modeAssoDesc',custom:'modeCustomDesc'}[k]||'modeHouseDesc');
+/* static labels outside the rendered regions */
+function applyLang(){
+  document.documentElement.lang=LANG==='pt'?'pt-BR':LANG;
+  $('menuBtn').textContent=t('menu');
+  $('opps').setAttribute('aria-label',t('ariaOpps'));
+  $('table').setAttribute('aria-label',t('ariaTable'));
+  $('hand').setAttribute('aria-label',t('ariaHand'));
+}
+/* a move as text, from structured log data (also understands older plain-text entries) */
+function logText(e){
+  if(!e) return '';
+  if(!e.kind) return e.text||'';
+  const me=isMe(e.p), who=me?'':(S.players[e.p]?S.players[e.p].name:'');
+  let s;
+  if(e.kind==='place') s=t(me?'mvPlaceYou':'mvPlace',{who,card:nm(e.card)});
+  else if(e.kind==='all') s=t(me?'mvAllYou':'mvAll',{who,card:nm(e.card),n:(e.taken||[]).length});
+  else s=t(me?'mvTakeYou':'mvTake',{who,card:nm(e.card),taken:(e.taken||[]).map(nm).join(' + ')});
+  return e.scopa?s+' Scopa!':s;
+}
+function statusText(){
+  if(S.phase==='roundEnd'||S.phase==='gameEnd') return t('roundOver');
+  if(S.phase!=='play') return '';
+  const last=S.log&&S.log.length?S.log[S.log.length-1]:null;
+  if(!last) return isMe(S.turn)?t('startsYou'):t('starts',{who:label(S.turn)});
+  let s=logText(last);
+  if(!S.pending){
+    if(isMe(S.turn)) s+=' '+t('yourTurn');
+    else if(!S.players[S.turn].ai) s+=' '+t('theirTurn',{who:S.players[S.turn].name});
+  }
+  return s;
+}
+const ROW_KEYS={Karten:'cards',Denari:'denari',Settebello:'settebello',Primiera:'primiera',Scope:'scope'};
+const rowLabel=r=>{ const k=r.key||ROW_KEYS[r.label]; return k?t('row'+k[0].toUpperCase()+k.slice(1)):r.label; };
+const cellVal=v=>v===null||v==='Farbe fehlt'?t('missingSuit'):v;
+
 
 /* ---------- card artwork ---------- */
 function sym(s,x,y,k){
@@ -438,11 +671,12 @@ const COMP_NAMES=['Don Denari','Settebello-Sepp','Primiera-Paolo','Scopatron 300
 const RETIRED=['Computer','Re Algoritmo','Mamma Mia 2.0','Bastoni-Bot','Luigi Logik','Signora Silicio'];
 const isCompName=n=>!n||RETIRED.includes(n)||COMP_NAMES.includes(n);
 const DEFAULT_SEATS=[{name:'Spieler 1',ai:false},{name:'Don Denari',ai:true},{name:'Spieler 3',ai:false},{name:'Spieler 4',ai:false}];
+const defaultName=i=>t('player',{n:i+1});
 const MODES={
-  house:{name:'Hausregeln', classic:false, ace:'eleven', teams:false, free:true, desc:'Einfache Primiera (mehr Siebener gewinnt), das Ass zählt beim Nehmen 1 oder 11, freie Wahl zwischen Einzelkarte und Kombination, zu viert spielt jeder für sich.'},
-  classic:{name:'Klassisch', classic:true, ace:'one', teams:true, free:false, desc:'Primiera mit Punktwerten, das Ass zählt 1, eine passende Einzelkarte hat Vorrang vor Kombinationen, zu viert zwei gegen zwei.'},
-  asso:{name:'Asso piglia tutto', classic:true, ace:'all', teams:true, free:false, desc:'Wie Klassisch, aber ein ausgespieltes Ass nimmt den ganzen Tisch. Das zählt nicht als Scopa.'},
-  custom:{name:'Eigene Regeln', desc:'Stell die Regeln unten selbst zusammen.'}
+  house:{classic:false, ace:'eleven', teams:false, free:true},
+  classic:{classic:true, ace:'one', teams:true, free:false},
+  asso:{classic:true, ace:'all', teams:true, free:false},
+  custom:{}
 };
 function rulesOf(s){ const m=MODES[s.mode]; return (s.mode==='custom'||!m)?{...s.custom}:{classic:m.classic, ace:m.ace, teams:m.teams, free:m.free}; }
 function loadSettings(){
@@ -451,13 +685,14 @@ function loadSettings(){
   const seats=DEFAULT_SEATS.map((d,i)=>{
     const o=s.seats&&s.seats[i];
     const ai=o?!!o.ai:d.ai;
-    let name=(o&&typeof o.name==='string'&&o.name.trim())||d.name;
+    let name=(o&&typeof o.name==='string'&&o.name.trim())||(d.ai?d.name:defaultName(i));
+    if(!ai&&DEFAULT_NAME_RE.test(name)) name=defaultName(i);
     if(ai&&RETIRED.includes(name)) name=COMP_NAMES[i];
     return {name, ai};
   });
   const c=s.custom||{};
   const custom={classic:s.custom?!!c.classic:!!s.classic, ace:['one','eleven','all'].includes(c.ace)?c.ace:'one', teams:s.custom?c.teams!==false:s.teams!==false, free:!!c.free};
-  return {target:s.target===21?21:11, values:s.values!==false, anim:s.anim!==false, players:[2,3,4].includes(s.players)?s.players:2, mode:MODES[s.mode]?s.mode:'house', custom, seats, where:s.where==='online'?'online':'local', oname:typeof s.oname==='string'?s.oname.slice(0,16):''};
+  return {target:s.target===21?21:11, values:s.values!==false, anim:s.anim!==false, players:[2,3,4].includes(s.players)?s.players:2, mode:MODES[s.mode]?s.mode:'house', custom, seats, where:s.where==='online'?'online':'local', oname:typeof s.oname==='string'?s.oname.slice(0,16):'', lang:LANG};
 }
 function saveSettings(s){ try{ localStorage.setItem('scopa-settings', JSON.stringify(s)); }catch(e){} }
 
@@ -476,11 +711,12 @@ const N=()=>S.players.length;
 const humans=()=>S.players.map((p,i)=>p.ai?null:i).filter(i=>i!==null);
 const soloHuman=()=>humans().length===1;
 const sideOf=p=>S.players[p].side;
-/* "Du" when you play alone against computers, otherwise the player's name */
-const label=p=>(S.online&&ON&&p===ON.seat)?'Du':(soloHuman()&&!S.players[p].ai?'Du':S.players[p].name);
-const isDu=p=>label(p)==='Du';
+/* "you" when you play alone against computers or online on your own seat, otherwise the player's name */
+const isMe=p=>S.online?(!!ON&&p===ON.seat):(soloHuman()&&!S.players[p].ai);
+const label=p=>isMe(p)?t('you'):S.players[p].name;
+const isDu=isMe;
 function sideLabel(i){
-  if(S.teams) return 'Team '+'AB'[i];
+  if(S.teams) return t('team',{x:'AB'[i]});
   return label(i);
 }
 const teamMembers=i=>S.players.filter(p=>p.side===i).map(p=>p.name).join(' + ');
@@ -488,7 +724,7 @@ const teamMembers=i=>S.players.filter(p=>p.side===i).map(p=>p.name).join(' + ');
 function newGame(settings){
   clearTimers();
   const R=rulesOf(settings), n=settings.players, teams=n===4&&!!R.teams;
-  const players=settings.seats.slice(0,n).map((s,i)=>({name:s.name.trim()||('Spieler '+(i+1)), ai:!!s.ai, side:teams?i%2:i}));
+  const players=settings.seats.slice(0,n).map((s,i)=>({name:s.name.trim()||defaultName(i), ai:!!s.ai, side:teams?i%2:i}));
   if(players.every(p=>p.ai)) players[0].ai=false;
   const sides=teams?2:n;
   S={players, teams, sides, scores:Array(sides).fill(0), dealer:Math.floor(Math.random()*n), round:0, settings:{...settings,...R}, phase:'play'};
@@ -502,7 +738,6 @@ function startRound(){
   S.table=S.deck.splice(0,4); S.last=null; S.sel=null; S.pending=null; S.summary=null;
   S.log=[]; S.lastMove=Array(n).fill(-1);
   deal(); S.turn=(S.dealer+1)%n; S.phase='play'; ui.revealed=null; S.dealt='round';
-  S.msg=isDu(S.turn)?'Du beginnst. Wähle eine Karte.':`${label(S.turn)} beginnt.`;
   render(); proceed();
 }
 function deal(){const n=N();for(let i=0;i<3;i++)for(let k=0;k<n;k++)S.hand[(S.dealer+1+k)%n].push(S.deck.pop());}
@@ -535,20 +770,13 @@ function combos(goal,table){
 }
 const handTotal=()=>S.hand.reduce((s,h)=>s+h.length,0);
 
-function moveText(p,card,opt){
-  const du=isDu(p), who=label(p);
-  if(opt&&takesAll(card)) return `${who} ${du?'spielst':'spielt'} ${nm(card)} und ${du?'nimmst':'nimmt'} den ganzen Tisch (${opt.length} Karten). Asso piglia tutto!`;
-  if(opt) return `${who} ${du?'spielst':'spielt'} ${nm(card)} und ${du?'nimmst':'nimmt'} ${opt.map(nm).join(' + ')}.`;
-  return `${who} ${du?'legst':'legt'} ${nm(card)} auf den Tisch.`;
-}
 function play(p,cardId,opt){
   if(S.online){ if(S.turn===p) onlinePlay(cardId,opt); return; }
   if(S.pending||S.phase!=='play'||S.turn!==p) return;
   const card=S.hand[p].find(c=>c.id===cardId); if(!card) return;
   S.hand[p]=S.hand[p].filter(c=>c.id!==cardId); S.sel=null;
   S.pending={p,card,ids:opt?opt.map(c=>c.id):null};
-  S.msg=moveText(p,card,opt);
-  S.log.push({p,text:S.msg}); S.lastMove[p]=S.log.length-1;
+  S.log.push({p, kind:opt?(takesAll(card)?'all':'take'):'place', card, taken:opt||[]}); S.lastMove[p]=S.log.length-1;
   render();
   later(S.players[p].ai?1300:550, commit);
 }
@@ -564,7 +792,7 @@ function commit(){
     S.piles[side].push(card,...taken); S.last=side;
     if(S.table.length===0&&!lastPlay&&!takesAll(card)){
       S.scope[side]++; flash(side);
-      S.log[S.log.length-1].text+=' Scopa!';
+      S.log[S.log.length-1].scopa=true;
     }
   } else S.table.push(card);
   S.turn=(p+1)%N();
@@ -572,8 +800,6 @@ function commit(){
     if(S.deck.length){ deal(); S.dealt='hands'; }
     else { endRound(); return; }
   }
-  if(isDu(S.turn)) S.msg+=' Du bist dran.';
-  else if(!S.players[S.turn].ai) S.msg+=` ${label(S.turn)} ist dran.`;
   render(); proceed();
   flyToPile(fly,side);
 }
@@ -595,20 +821,20 @@ function bestVec(vecs){
 function scoreRound(){
   const P=S.piles, rows=[];
   const n=P.map(p=>p.length);
-  rows.push({label:'Karten', vals:n, w:uniqueMax(n)});
+  rows.push({key:'cards', vals:n, w:uniqueMax(n)});
   const d=P.map(p=>p.filter(c=>c.s==='D').length);
-  rows.push({label:'Denari', vals:d, w:uniqueMax(d)});
+  rows.push({key:'denari', vals:d, w:uniqueMax(d)});
   const sb=P.findIndex(p=>p.some(c=>c.s==='D'&&c.v===7));
-  rows.push({label:'Settebello', vals:P.map((_,i)=>i===sb?'✓':'–'), w:sb<0?null:sb});
+  rows.push({key:'settebello', vals:P.map((_,i)=>i===sb?'✓':'–'), w:sb<0?null:sb});
   if(S.settings.classic){
     const x=P.map(primSum);
-    rows.push({label:'Primiera', vals:x.map(v=>v===null?'Farbe fehlt':v), w:uniqueMax(x)});
+    rows.push({key:'primiera', vals:x, w:uniqueMax(x)});
   } else {
     const vecs=P.map(p=>[7,6,1,5,4,3,2].map(v=>cnt(p,v)));
-    rows.push({label:'Primiera', vals:P.map(p=>`${cnt(p,7)}× 7 · ${cnt(p,6)}× 6`), w:bestVec(vecs)});
+    rows.push({key:'primiera', vals:P.map(p=>`${cnt(p,7)}× 7 · ${cnt(p,6)}× 6`), w:bestVec(vecs)});
   }
   rows.forEach(r=>r.pts=P.map((_,i)=>r.w===i?1:0));
-  rows.push({label:'Scope', vals:[...S.scope], pts:[...S.scope]});
+  rows.push({key:'scope', vals:[...S.scope], pts:[...S.scope]});
   return rows;
 }
 function endRound(){
@@ -622,7 +848,7 @@ function endRound(){
   const over=reached&&w!==null;
   S.summary={rows,rest,restTo,gained,winner:over?w:null};
   S.phase=over?'gameEnd':'roundEnd';
-  S.msg='Runde vorbei.'; ui.revealed=null;
+  ui.revealed=null;
   render();
 }
 
@@ -691,8 +917,8 @@ function highlight(ids){
 /* ---------- rendering ---------- */
 function flash(side){
   const el=document.createElement('div'); el.className='flash';
-  const who=S.teams?`Team ${'AB'[side]}`:(isDu(side)?'dich':label(side));
-  el.innerHTML=`<b>Scopa!</b><span>Punkt für ${esc(who)}</span>`;
+  const who=S.teams?t('team',{x:'AB'[side]}):(isMe(side)?t('youObj'):label(side));
+  el.innerHTML=`<b>Scopa!</b><span>${esc(t('scopaPoint',{who}))}</span>`;
   document.body.appendChild(el); setTimeout(()=>el.remove(),1350);
 }
 function sideChips(side){
@@ -701,7 +927,7 @@ function sideChips(side){
 /* face-down pile of captured cards; it grows in layers like the deck shrinks */
 function pileHTML(side){
   const n=S.piles[side]?S.piles[side].length:0, layers=n>20?3:n>8?2:n?1:0, rot=['-6deg','5deg','-2deg'];
-  return `<div class="cpile ${n?'':'empty'}" data-side="${side}" role="img" aria-label="Gesammelt: ${n} Karten">${Array.from({length:layers},(_,i)=>`<div class="card back" style="--r:${rot[i]}"></div>`).join('')}<b>${n}</b></div>`;
+  return `<div class="cpile ${n?'':'empty'}" data-side="${side}" role="img" aria-label="${t('pileAria',{n})}">${Array.from({length:layers},(_,i)=>`<div class="card back" style="--r:${rot[i]}"></div>`).join('')}<b>${n}</b></div>`;
 }
 /* captured cards fly from the table into the capturer's pile */
 function grabFlying(){
@@ -734,12 +960,12 @@ function flyToPile(items,side){
 function replaceBtn(p){
   if(!S.online||!ON||ON.seat!==0||S.phase!=='play'||S.turn!==p||S.players[p].ai||p===ON.seat) return '';
   if(Date.now()-ON.turnSince<20000) return '';
-  return `<button class="btn mini light" type="button" data-replace="${p}">Computer übernimmt</button>`;
+  return `<button class="btn mini light" type="button" data-replace="${p}">${t('replace')}</button>`;
 }
 function seatTag(p){
   const pl=S.players[p], bits=[];
-  if(S.teams) bits.push(`<span class="team t${pl.side}"><span class="long">Team </span>${'AB'[pl.side]}</span>`);
-  if(pl.ai) bits.push('<span class="tag ai">Computer</span>');
+  if(S.teams) bits.push(`<span class="team t${pl.side}"><span class="long">${t('teamWord')}</span>${'AB'[pl.side]}</span>`);
+  if(pl.ai) bits.push(`<span class="tag ai">${t('computer')}</span>`);
   return bits.join('');
 }
 function render(skipOverlay){
@@ -747,13 +973,13 @@ function render(skipOverlay){
   const myTurn=canAct();
 
   $('score').classList.toggle('many', S.scores.length>2);
-  $('score').innerHTML=S.phase==='lobby'?'':S.scores.map((x,i)=>`<span class="sc ${S.teams?'t'+i:''}" ${S.teams?`title="${esc(teamMembers(i))}"`:''}><em>${esc(sideLabel(i))}</em><b>${x}</b></span>`).join('<span class="sep">·</span>')+`<small>bis ${st.target}</small>`;
+  $('score').innerHTML=S.phase==='lobby'?'':S.scores.map((x,i)=>`<span class="sc ${S.teams?'t'+i:''}" ${S.teams?`title="${esc(teamMembers(i))}"`:''}><em>${esc(sideLabel(i))}</em><b>${x}</b></span>`).join('<span class="sep">·</span>')+`<small>${t('upTo',{n:st.target})}</small>`;
 
   // other seats, in turn order after the bottom seat
   const others=[]; for(let k=1;k<n;k++) others.push((bottom+k)%n);
   $('opps').innerHTML=others.map(p=>`<div data-seat="${p}" class="opp ${S.turn===p&&S.phase==='play'?'active':''}">
       <div class="top"><span class="name">${esc(label(p))}</span><span class="tags">${seatTag(p)}</span></div>${replaceBtn(p)}
-      <div class="opp-body"><div class="opp-cards">${S.hand[p].map(()=>'<div class="card back" aria-hidden="true"></div>').join('')||'<span class="none">keine Karten</span>'}</div><span class="opp-right">${S.scope[sideOf(p)]?`<span class="chip hot mini">Scope <b>${S.scope[sideOf(p)]}</b></span>`:''}${pileHTML(sideOf(p))}</span></div>
+      <div class="opp-body"><div class="opp-cards">${S.hand[p].map(()=>'<div class="card back" aria-hidden="true"></div>').join('')||`<span class="none">${t('noCards')}</span>`}</div><span class="opp-right">${S.scope[sideOf(p)]?`<span class="chip hot mini">Scope <b>${S.scope[sideOf(p)]}</b></span>`:''}${pileHTML(sideOf(p))}</span></div>
     </div>`).join('');
   $('opps').querySelectorAll('[data-replace]').forEach(b=>b.addEventListener('click',()=>{ b.disabled=true; onlineAction('replace',{seat:+b.dataset.replace}); }));
 
@@ -763,15 +989,15 @@ function render(skipOverlay){
   if(S.sel&&myTurn){const card=S.hand[S.turn].find(c=>c.id===S.sel); if(card) selOpts=options(card,S.table);}
   const autoIds=selOpts.length===1?selOpts[0].map(c=>c.id):[];
   const left=S.deck.length, layers=left>20?3:left>8?2:left?1:0;
-  let html=`<div class="deckpile ${left?'':'gone'}" role="img" aria-label="Stapel: ${left} Karten">${Array.from({length:layers},(_,i)=>`<div class="card back" style="--i:${i}"></div>`).join('')}<b>${left||''}</b></div>`;
+  let html=`<div class="deckpile ${left?'':'gone'}" role="img" aria-label="${t('deckAria',{n:left})}">${Array.from({length:layers},(_,i)=>`<div class="card back" style="--i:${i}"></div>`).join('')}<b>${left||''}</b></div>`;
   html+=S.table.map(c=>cardDiv(c,taken.has(c.id)?'taken':autoIds.includes(c.id)?'target':'')).join('');
   if(P) html+=cardDiv(P.card,'incoming'+(P.p!==v?' opp':''));
-  if(!S.table.length&&!P) html+='<span class="empty">Der Tisch ist leer.</span>';
+  if(!S.table.length&&!P) html+=`<span class="empty">${t('tableEmpty')}</span>`;
   $('table').innerHTML=html;
   $('table').classList.toggle('crowded', S.table.length+(P?1:0)>8);
   $('table').querySelectorAll('.card[data-id]').forEach(el=>el.addEventListener('click',()=>tableClick(el.dataset.id)));
 
-  $('msg').textContent=S.msg||'';
+  $('msg').textContent=statusText();
 
   // bottom seat: your hand (face up only when it is really yours to see)
   const face=v===bottom;
@@ -783,21 +1009,21 @@ function render(skipOverlay){
   } else {
     $('hand').innerHTML=S.hand[bottom].map(()=>'<div class="card back" aria-hidden="true"></div>').join('');
   }
-  $('myPile').innerHTML=pileHTML(sideOf(bottom))+'<span class="pilelbl">Gesammelt</span>';
+  $('myPile').innerHTML=pileHTML(sideOf(bottom))+`<span class="pilelbl">${t('collected')}</span>`;
   $('meName').innerHTML=`<span class="who">${esc(label(bottom))}</span>${seatTag(bottom)}`;
   const side=sideOf(bottom);
-  $('myChips').innerHTML=(S.teams?`<span class="chip teamchip">Team ${'AB'[side]}: ${esc(teamMembers(side))}</span>`:'')+sideChips(side)+`<span class="chip modechip">Modus: ${(MODES[st.mode]||MODES.house).name}</span>`;
+  $('myChips').innerHTML=(S.teams?`<span class="chip teamchip">${esc(t('teamChip',{x:'AB'[side],m:teamMembers(side)}))}</span>`:'')+sideChips(side)+`<span class="chip modechip">${esc(t('modeChip',{m:modeName(st.mode)}))}</span>`;
 
   // options
   let o='';
   if(myTurn&&S.sel){
-    if(!selOpts.length) o=`<p>Mit dieser Karte kannst du nichts nehmen.</p><button class="btn primary" data-o="-1" type="button">Auf den Tisch legen</button>`;
-    else if(selOpts.length===1) o=`<button class="btn primary" data-o="0" type="button">${takesAll(S.hand[S.turn].find(c=>c.id===S.sel))?`Ganzen Tisch nehmen (${selOpts[0].length} Karten)`:'Nehmen: '+selOpts[0].map(nm).join(' + ')}</button>`;
-    else o=`<p>Wähle, was du nimmst:</p>`+selOpts.map((op,i)=>`<button class="btn" data-o="${i}" type="button">${op.map(nm).join(' + ')}</button>`).join('');
-  } else if(myTurn) o=`<p>Tippe eine Karte an. Zweimal tippen spielt sie direkt.</p>`;
+    if(!selOpts.length) o=`<p>${t('cantTake')}</p><button class="btn primary" data-o="-1" type="button">${t('placeOnTable')}</button>`;
+    else if(selOpts.length===1) o=`<button class="btn primary" data-o="0" type="button">${takesAll(S.hand[S.turn].find(c=>c.id===S.sel))?t('takeAll',{n:selOpts[0].length}):t('take',{c:selOpts[0].map(nm).join(' + ')})}</button>`;
+    else o=`<p>${t('chooseTake')}</p>`+selOpts.map((op,i)=>`<button class="btn" data-o="${i}" type="button">${op.map(nm).join(' + ')}</button>`).join('');
+  } else if(myTurn) o=`<p>${t('tapHint')}</p>`;
   if(myTurn&&S.sel){
     const card=S.hand[S.turn].find(c=>c.id===S.sel), blocked=card?blockedCombos(card,S.table):[];
-    if(blocked.length) o+=`<p class="rulehint">${blocked.length===1?'Die Kombination':'Die Kombinationen'} ${blocked.map(b=>b.map(c=>RANK_NAME[c.v]||c.v).join(' + ')).join(' oder ')} ${blocked.length===1?'ist':'sind'} nicht erlaubt, weil eine passende Einzelkarte auf dem Tisch liegt.</p>`;
+    if(blocked.length) o+=`<p class="rulehint">${t(blocked.length===1?'blocked1':'blockedN',{c:blocked.map(b=>b.map(c=>RANK_NAME[c.v]||c.v).join(' + ')).join(' '+t('or')+' ')})}</p>`;
   }
   $('opts').innerHTML=o;
   $('opts').classList.toggle('many', selOpts.length>2);
@@ -855,93 +1081,87 @@ function renderOverlay(){
   ov.innerHTML='';
 }
 function coverHTML(){
-  const p=S.turn, name=esc(S.players[p].name);
+  const p=S.turn, who=S.players[p].name;
   const since=S.log.slice(S.lastMove[p]+1);
-  const list=since.length?`<div class="field"><span>${S.lastMove[p]<0?'Bisher in dieser Runde':'Seit deinem letzten Zug'}</span><ul class="log">${since.map(e=>`<li>${esc(e.text)}</li>`).join('')}</ul></div>`:'';
-  return `<div class="overlay"><div class="sheet" role="dialog" aria-label="${name} ist dran">
-    <h2>${name} ist dran</h2>
-    <p>Gib das Gerät an ${name}. Alle anderen schauen bitte weg.</p>
+  const list=since.length?`<div class="field"><span>${t(S.lastMove[p]<0?'sinceStart':'sinceLast')}</span><ul class="log">${since.map(e=>`<li>${esc(logText(e))}</li>`).join('')}</ul></div>`:'';
+  return `<div class="overlay"><div class="sheet" role="dialog" aria-label="${esc(t('coverTitle',{who}))}">
+    <h2>${esc(t('coverTitle',{who}))}</h2>
+    <p>${esc(t('coverText',{who}))}</p>
     ${list}
-    <div class="actions"><button class="btn primary" type="button" id="reveal">Karten aufdecken</button></div>
+    <div class="actions"><button class="btn primary" type="button" id="reveal">${t('reveal')}</button></div>
   </div></div>`;
 }
 function menuHTML(){
   const s=loadSettings(), c=s.custom;
   const seatRows=s.seats.map((seat,i)=>`<div class="seat" id="seat${i}" ${i>=s.players?'hidden':''}>
       <span class="num">${i+1}</span>
-      <input type="text" id="name${i}" value="${esc(seat.name)}" maxlength="16" aria-label="Name Platz ${i+1}">
-      <select id="ai${i}" aria-label="Platz ${i+1} besetzt durch"><option value="0" ${seat.ai?'':'selected'}>Mensch</option><option value="1" ${seat.ai?'selected':''}>Computer</option></select>
-      <button type="button" class="reroll ${seat.ai?'':'off'}" id="re${i}" title="Anderen Namen würfeln" aria-label="Anderen Computernamen würfeln" ${seat.ai?'':'tabindex="-1" aria-hidden="true"'}>↻</button>
+      <input type="text" id="name${i}" value="${esc(seat.name)}" maxlength="16" aria-label="${t('seatName',{n:i+1})}">
+      <select id="ai${i}" aria-label="${t('seatBy',{n:i+1})}"><option value="0" ${seat.ai?'':'selected'}>${t('human')}</option><option value="1" ${seat.ai?'selected':''}>${t('computer')}</option></select>
+      <button type="button" class="reroll ${seat.ai?'':'off'}" id="re${i}" title="${t('reroll')}" aria-label="${t('reroll')}" ${seat.ai?'':'tabindex="-1" aria-hidden="true"'}>↻</button>
       <span class="team t${i%2}" data-team>${'AB'[i%2]}</span>
     </div>`).join('');
   const teamsOn=s.players===4&&rulesOf(s).teams;
   return `<div class="overlay"><form class="sheet menu" id="menuForm">
-    <h2>Scopa</h2>
-    <p>Für 2 bis 4 Spieler, an einem Gerät oder online. Freie Plätze übernimmt auf Wunsch der Computer.</p>
+    <div class="menuhead"><h2>Scopa</h2><div class="langs" role="group" aria-label="${t('language')}">${Object.keys(LANGS).map(k=>`<button type="button" class="lang ${k===LANG?'on':''}" data-lang="${k}" aria-pressed="${k===LANG}" title="${LANGS[k]}">${k==='pt'?'PT-BR':k.toUpperCase()}</button>`).join('')}</div></div>
+    <p>${t('intro')}</p>
     <div class="seg where">
-      <label><input type="radio" name="where" id="w-local" ${s.where==='local'||ON?'':''}${s.where!=='online'?'checked':''}><span>An einem Gerät</span></label>
-      <label><input type="radio" name="where" id="w-online" ${s.where==='online'?'checked':''}><span>Online</span></label>
+      <label><input type="radio" name="where" id="w-local" ${s.where==='local'||ON?'':''}${s.where!=='online'?'checked':''}><span>${t('oneDevice')}</span></label>
+      <label><input type="radio" name="where" id="w-online" ${s.where==='online'?'checked':''}><span>${t('online')}</span></label>
     </div>
     <div class="cols"><div class="col">
-    <div class="field"><span>Spieler</span>
+    <div class="field"><span>${t('players')}</span>
       <div class="seg">${[2,3,4].map(k=>`<label><input type="radio" name="players" id="p${k}" value="${k}" ${s.players===k?'checked':''}><span>${k}</span></label>`).join('')}</div>
     </div>
-    <div class="field seats ${teamsOn?'teams':''}" id="seats"><span>Plätze in Spielreihenfolge</span>${seatRows}
-      <p class="hint" id="teamHint" ${teamsOn?'':'hidden'}>Zu viert spielen Platz 1 und 3 (Team A) gegen Platz 2 und 4 (Team B).</p>
-      <p class="hint">Sind mehrere Menschen dabei, wird das Gerät reihum weitergegeben. Vor jedem Zug verdeckt ein Hinweis die Karten.</p>
+    <div class="field seats ${teamsOn?'teams':''}" id="seats"><span>${t('seatsOrder')}</span>${seatRows}
+      <p class="hint" id="teamHint" ${teamsOn?'':'hidden'}>${t('teamHint')}</p>
+      <p class="hint">${t('passHint')}</p>
     </div>
-    <div class="field online" id="onlineBox" ${s.where==='online'?'':'hidden'}><span>Online spielen</span>
-      <label class="lbl" for="oname">Dein Name</label>
-      <input type="text" id="oname" maxlength="16" value="${esc(s.oname||(s.seats[0].ai?'':s.seats[0].name))}" autocomplete="nickname">
-      <p class="hint">Jeder spielt am eigenen Gerät. Erstelle einen Raum mit Spielerzahl und Modus von hier, oder tritt mit dem Code eines Mitspielers bei.</p>
-      <div class="join"><input type="text" id="ocode" maxlength="4" placeholder="Code" value="${esc(ui.joinCode||'')}" autocapitalize="characters" autocomplete="off" aria-label="Raum-Code"><button class="btn" type="button" id="ojoin">Beitreten</button></div>
+    <div class="field online" id="onlineBox" ${s.where==='online'?'':'hidden'}><span>${t('playOnline')}</span>
+      <label class="lbl" for="oname">${t('yourName')}</label>
+      <input type="text" id="oname" maxlength="16" value="${esc(s.oname&&!DEFAULT_NAME_RE.test(s.oname)?s.oname:(s.seats[0].ai||DEFAULT_NAME_RE.test(s.seats[0].name)?'':s.seats[0].name))}" autocomplete="nickname">
+      <p class="hint">${t('onlineHint')}</p>
+      <div class="join"><input type="text" id="ocode" maxlength="4" placeholder="${t('code')}" value="${esc(ui.joinCode||'')}" autocapitalize="characters" autocomplete="off" aria-label="${t('roomCode')}"><button class="btn" type="button" id="ojoin">${t('join')}</button></div>
       <p class="err" id="oerr" role="alert"></p>
     </div>
     </div><div class="col">
-    <div class="field"><span>Spielmodus</span>
-      <div class="seg grid">${Object.keys(MODES).map(k=>`<label><input type="radio" name="mode" id="mode-${k}" value="${k}" ${s.mode===k?'checked':''}><span>${MODES[k].name}</span></label>`).join('')}</div>
-      <p class="hint" id="modeDesc">${MODES[s.mode].desc}</p>
+    <div class="field"><span>${t('gameMode')}</span>
+      <div class="seg grid">${Object.keys(MODES).map(k=>`<label><input type="radio" name="mode" id="mode-${k}" value="${k}" ${s.mode===k?'checked':''}><span>${modeName(k)}</span></label>`).join('')}</div>
+      <p class="hint" id="modeDesc">${modeDesc(s.mode)}</p>
     </div>
     <div class="custom" id="customBox" ${s.mode==='custom'?'':'hidden'}>
       <label class="check"><input type="checkbox" id="classic" ${c.classic?'checked':''}>
-        <span><b>Klassische Primiera</b><small>Beste Karte jeder Farbe nach Punktwerten (7 = 21, 6 = 18, Ass = 16, 5 = 15 … Bildkarten = 10). Ohne Haken gewinnt, wer mehr Siebener hat, bei Gleichstand mehr Sechser, dann Asse.</small></span></label>
-      <div class="field"><span>Ass</span>
+        <span><b>${t('classicPrim')}</b><small>${t('classicPrimHint')}</small></span></label>
+      <div class="field"><span>${t('ace')}</span>
         <div class="radios">
-          <label class="check"><input type="radio" name="ace" id="ace-one" ${c.ace==='one'?'checked':''}><span><b>Zählt 1</b><small>Standardregel.</small></span></label>
-          <label class="check"><input type="radio" name="ace" id="ace-eleven" ${c.ace==='eleven'?'checked':''}><span><b>Zählt 1 oder 11</b><small>Ein ausgespieltes Ass darf Karten nehmen, die zusammen 11 ergeben (z. B. 5 + 6). Liegt ein Ass auf dem Tisch, muss es zuerst dieses nehmen.</small></span></label>
-          <label class="check"><input type="radio" name="ace" id="ace-all" ${c.ace==='all'?'checked':''}><span><b>Asso piglia tutto</b><small>Ein ausgespieltes Ass nimmt den ganzen Tisch. Das zählt nicht als Scopa.</small></span></label>
+          <label class="check"><input type="radio" name="ace" id="ace-one" ${c.ace==='one'?'checked':''}><span><b>${t('aceOne')}</b><small>${t('aceOneHint')}</small></span></label>
+          <label class="check"><input type="radio" name="ace" id="ace-eleven" ${c.ace==='eleven'?'checked':''}><span><b>${t('aceEleven')}</b><small>${t('aceElevenHint')}</small></span></label>
+          <label class="check"><input type="radio" name="ace" id="ace-all" ${c.ace==='all'?'checked':''}><span><b>Asso piglia tutto</b><small>${t('aceAllHint')}</small></span></label>
         </div></div>
       <label class="check"><input type="checkbox" id="free" ${c.free?'checked':''}>
-        <span><b>Freie Wahl beim Nehmen</b><small>Liegt eine passende Einzelkarte und eine passende Kombination auf dem Tisch, darfst du wählen. Ohne Haken hat die Einzelkarte Vorrang.</small></span></label>
-      <div class="field" id="teamsField" ${s.players===4?'':'hidden'}><span>Zu viert</span>
+        <span><b>${t('free')}</b><small>${t('freeHint')}</small></span></label>
+      <div class="field" id="teamsField" ${s.players===4?'':'hidden'}><span>${t('withFour')}</span>
         <div class="seg">
-          <label><input type="radio" name="teams" id="mteam" ${c.teams?'checked':''}><span>Teams (2 gegen 2)</span></label>
-          <label><input type="radio" name="teams" id="msolo" ${c.teams?'':'checked'}><span>Jeder für sich</span></label>
+          <label><input type="radio" name="teams" id="mteam" ${c.teams?'checked':''}><span>${t('teams2v2')}</span></label>
+          <label><input type="radio" name="teams" id="msolo" ${c.teams?'':'checked'}><span>${t('solo')}</span></label>
         </div></div>
     </div>
     </div></div>
     <div class="below">
-    <div class="field"><span>Gespielt wird bis</span>
+    <div class="field"><span>${t('playTo')}</span>
       <div class="seg">
-        <label><input type="radio" name="target" id="t11" value="11" ${s.target===11?'checked':''}><span>11 Punkte</span></label>
-        <label><input type="radio" name="target" id="t21" value="21" ${s.target===21?'checked':''}><span>21 Punkte</span></label>
+        <label><input type="radio" name="target" id="t11" value="11" ${s.target===11?'checked':''}><span>${t('points',{n:11})}</span></label>
+        <label><input type="radio" name="target" id="t21" value="21" ${s.target===21?'checked':''}><span>${t('points',{n:21})}</span></label>
       </div></div>
     <label class="check"><input type="checkbox" id="anim" ${ui.anim?'checked':''}>
-      <span><b>Animationen beim Austeilen</b><small>Die Karten fliegen vom Stapel auf den Tisch und zu den Spielern. Gilt sofort.</small></span></label>
+      <span><b>${t('animLbl')}</b><small>${t('animHint')}</small></span></label>
     <label class="check"><input type="checkbox" id="values" ${ui.values?'checked':''}>
-      <span><b>Spielwerte auf den Karten zeigen</b><small>Zeigt bei Ass und Bildkarten den Wert in den freien Ecken (Ass 1, Fante 8, Cavallo 9, Re 10). Gilt sofort, auch im laufenden Spiel.</small></span></label>
+      <span><b>${t('valuesLbl')}</b><small>${t('valuesHint')}</small></span></label>
     <div class="actions">
-      ${ON?'<button class="btn" type="button" id="leaveOn">Raum verlassen</button>':''}
-      ${ui.started?'<button class="btn" type="button" id="resume">Weiterspielen</button>':''}
-      <button class="btn primary" type="submit" id="mainSubmit">${s.where==='online'?'Raum erstellen':(ui.started?'Neues Spiel':'Spiel starten')}</button>
+      ${ON?`<button class="btn" type="button" id="leaveOn">${t('leaveRoom')}</button>`:''}
+      ${ui.started?`<button class="btn" type="button" id="resume">${t('resume')}</button>`:''}
+      <button class="btn primary" type="submit" id="mainSubmit">${s.where==='online'?t('createRoom'):(ui.started?t('newGame'):t('startGame'))}</button>
     </div>
-    <details><summary>Regeln kurz</summary><ul>
-      <li>Jeder hat 3 Karten, zu Beginn liegen 4 offen auf dem Tisch.</li>
-      <li>Spiele eine Karte: Nimm eine Tischkarte mit gleichem Wert oder mehrere, deren Summe passt. Eine einzelne passende Karte hat Vorrang, außer der Modus erlaubt freie Wahl.</li>
-      <li>Wer den Tisch abräumt, macht eine Scopa (1 Punkt), außer mit dem letzten Zug der Runde.</li>
-      <li>Je 1 Punkt für meiste Karten, meiste Denari, Settebello (7 di Denari) und Primiera. Bei Gleichstand gibt es keinen Punkt.</li>
-      <li>Werte: Ass 1, 2–7, Fante 8, Cavallo 9, Re 10. Die Modi ändern, was das Ass kann.</li>
-    </ul></details>
+    <details><summary>${t('rulesShort')}</summary><ul>${[1,2,3,4,5].map(i=>`<li>${t('rule'+i)}</li>`).join('')}</ul></details>
     </div>
   </form></div>`;
 }
@@ -953,12 +1173,12 @@ function bindMenu(){
   const sync=()=>{
     const k=count(), m=mode();
     $('seats').hidden=online(); $('onlineBox').hidden=!online();
-    $('mainSubmit').textContent=online()?'Raum erstellen':(ui.started?'Neues Spiel':'Spiel starten');
+    $('mainSubmit').textContent=online()?t('createRoom'):(ui.started?t('newGame'):t('startGame'));
     for(let i=0;i<4;i++) $('seat'+i).hidden=i>=k;
     const teamsOn=k===4&&(m==='custom'?$('mteam').checked:MODES[m].teams);
     $('teamHint').hidden=!teamsOn;
     $('seats').classList.toggle('teams',teamsOn);
-    $('modeDesc').textContent=MODES[m].desc;
+    $('modeDesc').textContent=modeDesc(m);
     $('customBox').hidden=m!=='custom';
     $('teamsField').hidden=k!==4;
   };
@@ -975,19 +1195,19 @@ function bindMenu(){
   for(let i=0;i<4;i++){
     $('ai'+i).addEventListener('change',()=>{
       const ai=$('ai'+i).value==='1', inp=$('name'+i), cur=inp.value.trim();
-      if(ai&&(!cur||/^Spieler \d$/.test(cur))) inp.value=pickName(i);
-      if(!ai&&isCompName(cur)) inp.value='Spieler '+(i+1);
+      if(ai&&(!cur||DEFAULT_NAME_RE.test(cur))) inp.value=pickName(i);
+      if(!ai&&isCompName(cur)) inp.value=defaultName(i);
       const re=$('re'+i); re.classList.toggle('off',!ai); if(ai){re.removeAttribute('tabindex'); re.removeAttribute('aria-hidden');} else {re.tabIndex=-1; re.setAttribute('aria-hidden','true');}
     });
     $('re'+i).addEventListener('click',()=>{ $('name'+i).value=pickName(i); });
   }
   const collect=()=>{
     const players=count();
-    const seats=[0,1,2,3].map(i=>({name:$('name'+i).value.trim()||DEFAULT_SEATS[i].name, ai:$('ai'+i).value==='1'}));
+    const seats=[0,1,2,3].map(i=>({name:$('name'+i).value.trim()||($('ai'+i).value==='1'?DEFAULT_SEATS[i].name:defaultName(i)), ai:$('ai'+i).value==='1'}));
     if(seats.slice(0,players).every(x=>x.ai)) seats[0].ai=false;
-    return {target:$('t21').checked?21:11, values:$('values').checked, anim:$('anim').checked, players, mode:mode(), custom:customRules(), seats, where:online()?'online':'local', oname:$('oname').value.trim().slice(0,16)};
+    return {lang:LANG, target:$('t21').checked?21:11, values:$('values').checked, anim:$('anim').checked, players, mode:mode(), custom:customRules(), seats, where:online()?'online':'local', oname:$('oname').value.trim().slice(0,16)};
   };
-  const onlineName=()=>{ const n=$('oname').value.trim(); if(!n){ $('oerr').textContent='Trag zuerst deinen Namen ein.'; $('oname').focus(); return null; } return n; };
+  const onlineName=()=>{ const n=$('oname').value.trim(); if(!n){ $('oerr').textContent=t('nameFirst'); $('oname').focus(); return null; } return n; };
   const busy=(on)=>{ ['mainSubmit','ojoin'].forEach(id=>{ if($(id)) $(id).disabled=on; }); };
   $('menuForm').addEventListener('submit',async e=>{
     e.preventDefault();
@@ -1010,7 +1230,7 @@ function bindMenu(){
     const s=collect(); saveSettings(s);
     const name=onlineName(); if(!name) return;
     const code=$('ocode').value.toUpperCase().replace(/[^A-Z]/g,'');
-    if(code.length!==4){ $('oerr').textContent='Der Raum-Code hat vier Buchstaben.'; $('ocode').focus(); return; }
+    if(code.length!==4){ $('oerr').textContent=t('codeFour'); $('ocode').focus(); return; }
     $('oerr').textContent=''; busy(true);
     try{
       const r=await api('join',{code, name});
@@ -1020,6 +1240,18 @@ function bindMenu(){
   });
   $('ocode').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); $('ojoin').click(); } });
   const lo=$('leaveOn'); if(lo) lo.addEventListener('click',()=>leaveOnline());
+  /* switching language keeps everything entered so far */
+  document.querySelectorAll('.lang').forEach(b=>b.addEventListener('click',()=>{
+    if(b.dataset.lang===LANG) return;
+    const keep=collect(), code=$('ocode').value;
+    LANG=b.dataset.lang;
+    saveSettings({...keep, lang:LANG, oname:DEFAULT_NAME_RE.test(keep.oname)?'':keep.oname, seats:keep.seats.map((x,i)=>(!x.ai&&DEFAULT_NAME_RE.test(x.name))?{...x,name:defaultName(i)}:x)});
+    ui.joinCode=code;
+    applyLang();
+    $('overlay').innerHTML='';
+    render();
+    if($('ocode')) $('ocode').value=code;
+  }));
   sync();
   $('anim').addEventListener('change',e=>{
     ui.anim=e.target.checked;
@@ -1035,28 +1267,28 @@ function bindMenu(){
 function summaryHTML(){
   const m=S.summary, cols=S.scores.map((_,i)=>i);
   const headCell=i=>`<th>${esc(sideLabel(i))}${S.teams?`<small>${esc(teamMembers(i))}</small>`:''}</th>`;
-  const rows=m.rows.map(r=>`<tr><th>${r.label}</th>${cols.map(i=>`<td class="${r.pts[i]?'win':''}">${r.vals[i]}${r.pts[i]?`<span class="pt">+${r.pts[i]}</span>`:''}</td>`).join('')}</tr>`).join('');
+  const rows=m.rows.map(r=>`<tr><th>${rowLabel(r)}</th>${cols.map(i=>`<td class="${r.pts[i]?'win':''}">${esc(cellVal(r.vals[i]))}${r.pts[i]?`<span class="pt">+${r.pts[i]}</span>`:''}</td>`).join('')}</tr>`).join('');
   let head;
   if(S.phase==='gameEnd'){
     const w=m.winner;
-    head = S.teams ? `Team ${'AB'[w]} gewinnt` : (isDu(w)?'Gewonnen!':`${esc(label(w))} gewinnt`);
-  } else head=`Runde ${S.round} vorbei`;
-  const restWho = m.restTo===null?'':(S.teams?`Team ${'AB'[m.restTo]}`:(isDu(m.restTo)?'dich':esc(label(m.restTo))));
-  const restNote = m.rest&&m.restTo!==null?`<p class="note">Die letzten ${m.rest} Tischkarten gingen an ${restWho}.</p>`:'';
-  const tie = S.phase==='roundEnd'&&S.scores.some(x=>x>=S.settings.target)?'<p class="note">Gleichstand an der Spitze, es geht weiter.</p>':'';
+    head = esc(S.teams ? t('winsTeam',{x:'AB'[w]}) : (isMe(w)?t('youWon'):t('wins',{who:label(w)})));
+  } else head=esc(t('roundEnded',{n:S.round}));
+  const restWho = m.restTo===null?'':(S.teams?t('team',{x:'AB'[m.restTo]}):(isMe(m.restTo)?t('youObj'):label(m.restTo)));
+  const restNote = m.rest&&m.restTo!==null?`<p class="note">${esc(t('restNote',{n:m.rest,who:restWho}))}</p>`:'';
+  const tie = S.phase==='roundEnd'&&S.scores.some(x=>x>=S.settings.target)?`<p class="note">${t('tieGoesOn')}</p>`:'';
   return `<div class="overlay"><div class="sheet wide" role="dialog" aria-label="${head}">
     <h2>${head}</h2>
     <div class="scroll"><table class="sum"><thead><tr><th></th>${cols.map(headCell).join('')}</tr></thead>
       <tbody>${rows}</tbody>
-      <tfoot><tr><th>Diese Runde</th>${cols.map(i=>`<td>+${m.gained[i]}</td>`).join('')}</tr>
-      <tr class="total"><th>Gesamt</th>${cols.map(i=>`<td>${S.scores[i]}</td>`).join('')}</tr></tfoot></table></div>
+      <tfoot><tr><th>${t('thisRound')}</th>${cols.map(i=>`<td>+${m.gained[i]}</td>`).join('')}</tr>
+      <tr class="total"><th>${t('total')}</th>${cols.map(i=>`<td>${S.scores[i]}</td>`).join('')}</tr></tfoot></table></div>
     ${restNote}${tie}
-    ${S.online&&S.phase==='gameEnd'&&ON&&ON.seat!==0?`<p class="note">${esc(S.players[0].name)} kann eine neue Partie starten.</p>`:''}
+    ${S.online&&S.phase==='gameEnd'&&ON&&ON.seat!==0?`<p class="note">${esc(t('canRestart',{who:S.players[0].name}))}</p>`:''}
     <div class="actions">${S.phase==='gameEnd'
       ?(S.online
-        ?'<button class="btn" type="button" id="toMenu">Raum verlassen</button>'+(ON&&ON.seat===0?'<button class="btn primary" type="button" id="again">Nochmal spielen</button>':'')
-        :'<button class="btn" type="button" id="toMenu">Menü</button><button class="btn primary" type="button" id="again">Nochmal spielen</button>')
-      :'<button class="btn primary" type="button" id="next">Nächste Runde</button>'}</div>
+        ?`<button class="btn" type="button" id="toMenu">${t('leaveRoom')}</button>`+(ON&&ON.seat===0?`<button class="btn primary" type="button" id="again">${t('playAgain')}</button>`:'')
+        :`<button class="btn" type="button" id="toMenu">${t('menu')}</button><button class="btn primary" type="button" id="again">${t('playAgain')}</button>`)
+      :`<button class="btn primary" type="button" id="next">${t('nextRound')}</button>`}</div>
   </div></div>`;
 }
 function bindSummary(){
@@ -1070,7 +1302,6 @@ $('menuBtn').addEventListener('click',()=>{ui.menu=true; $('overlay').innerHTML=
 /* ---------- online (Supabase: server holds the deck, every move is checked there) ---------- */
 const SB_URL='https://dwsieddjvldzurosjdpp.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3c2llZGRqdmxkenVyb3NqZHBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1NDE3NjEsImV4cCI6MjEwNzExNzc2MX0.NyIPiH_MQBNrHQn6Ype0SF8KLMO47FwZhosdoAusYeI';
-const NET_ERR='Keine Verbindung zum Server. Online spielen geht über thisksad.github.io/Game-Hub/scopa/ und braucht Internet.';
 let ON=null;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
@@ -1080,16 +1311,16 @@ const sbHeaders={'Content-Type':'application/json','apikey':SB_KEY,'Authorizatio
 async function api(action,body={}){
   let r;
   try{ r=await fetch(SB_URL+'/functions/v1/scopa',{method:'POST',headers:sbHeaders,body:JSON.stringify({action,...body})}); }
-  catch(e){ throw new Error(NET_ERR); }
-  const j=await r.json().catch(()=>({error:'Unerwartete Antwort vom Server.'}));
-  if(!r.ok||j.error) throw new Error(j.error||'Serverfehler, bitte nochmal versuchen.');
+  catch(e){ throw new Error(t('netErr')); }
+  const j=await r.json().catch(()=>({error:t('badResponse')}));
+  if(!r.ok||j.error) throw new Error(j.code&&I18N.de['e_'+j.code]?t('e_'+j.code):(j.code==='server'||!j.error?t('serverErr'):j.error));
   return j;
 }
 async function rest(path,opts={}){
   let r;
   try{ r=await fetch(SB_URL+'/rest/v1/'+path,{...opts,headers:sbHeaders}); }
-  catch(e){ throw new Error(NET_ERR); }
-  if(!r.ok) throw new Error('Serverfehler beim Laden.');
+  catch(e){ throw new Error(t('netErr')); }
+  if(!r.ok) throw new Error(t('loadErr'));
   return r.json();
 }
 async function fetchRoom(code){ const rows=await rest(`scopa_rooms?code=eq.${encodeURIComponent(code)}&select=id,version,state`); return rows[0]||null; }
@@ -1140,8 +1371,8 @@ function leaveOnline(silent){
   try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
   if(!silent){ ui.menu=true; $('overlay').innerHTML=''; newGame(loadSettings()); }
 }
-function roomGone(){ toast('Diesen Raum gibt es nicht mehr.'); leaveOnline(); }
-function seatLost(){ toast('Dein Platz in diesem Raum ist nicht mehr gültig, zum Beispiel weil der Computer ihn übernommen hat.'); leaveOnline(); }
+function roomGone(){ toast(t('roomGone')); leaveOnline(); }
+function seatLost(){ toast(t('seatLost')); leaveOnline(); }
 
 function onRow(row){
   if(!ON||!row||!row.state) return;
@@ -1169,7 +1400,6 @@ async function applyRow(row,animate){
     const counts=[...prev.handCounts]; counts[la.seat]=Math.max(0,(counts[la.seat]||0)-1);
     S=buildS({...prev,handCounts:counts},hand);
     S.pending={p:la.seat,card:la.card,ids:la.taken.length?la.taken.map(c=>c.id):null};
-    S.msg=(st.log&&st.log.length?st.log[st.log.length-1].text:st.msg)||'';
     render(ui.menu);
     await sleep(la.seat===ON.seat?500:1200);
     if(!ON) return;
@@ -1196,13 +1426,13 @@ async function applyRow(row,animate){
 }
 function buildS(st,hand){
   const keepSel=S&&S.online&&hand.some(c=>c.id===S.sel)?S.sel:null;
-  const mine=st.status==='play'&&st.turn===ON.seat, sides=st.sides||st.players.length;
-  return {online:true, players:st.players.map((p,i)=>({...p,name:p.name||'Freier Platz',side:p.side??i})), teams:!!st.teams, sides:st.sides,
+  const sides=st.sides||st.players.length;
+  return {online:true, players:st.players.map((p,i)=>({...p,name:p.name||t('freeSeat'),side:p.side??i})), teams:!!st.teams, sides:st.sides,
     scores:Array.from({length:sides},(_,i)=>(st.scores||[])[i]||0), round:st.round, dealer:st.dealer, turn:st.turn, table:st.table||[],
     deck:Array(st.deckCount||0).fill(0), hand:st.players.map((_,i)=>i===ON.seat?[...hand]:Array(st.handCounts[i]||0).fill(0)),
     piles:Array.from({length:sides},(_,i)=>Array((st.pileCounts||[])[i]||0).fill(0)), scope:Array.from({length:sides},(_,i)=>(st.scope||[])[i]||0), phase:st.status,
     settings:st.settings, log:st.log||[], lastMove:st.lastMove||[], summary:st.summary,
-    msg:(st.msg||'')+(mine?' Du bist dran.':''), sel:keepSel, pending:null};
+    sel:keepSel, pending:null};
 }
 async function onlinePlay(cardId,opt){
   if(!ON||ON.busy) return;
@@ -1239,36 +1469,36 @@ function onlineProceed(){
 
 function lobbyHTML(){
   const st=ON.st, host=ON.seat===0, link=location.origin+location.pathname+'#'+ON.code;
-  const mode=(MODES[st.settings.mode]||MODES.house).name;
+  const mode=modeName(st.settings.mode);
   const rows=st.players.map((p,i)=>{
     const tags=[];
-    if(i===0) tags.push('<span class="tag dark">Gastgeber</span>');
-    if(i===ON.seat) tags.push('<span class="tag dark">Du</span>');
-    if(p.ai) tags.push('<span class="tag dark">Computer</span>');
-    if(st.players.length===4&&rulesOf(st.settings).teams) tags.push(`<span class="team t${i%2}">Team ${'AB'[i%2]}</span>`);
+    if(i===0) tags.push(`<span class="tag dark">${t('host')}</span>`);
+    if(i===ON.seat) tags.push(`<span class="tag dark">${t('you')}</span>`);
+    if(p.ai) tags.push(`<span class="tag dark">${t('computer')}</span>`);
+    if(st.players.length===4&&rulesOf(st.settings).teams) tags.push(`<span class="team t${i%2}">${t('team',{x:'AB'[i%2]})}</span>`);
     let ctrl='';
-    if(host&&i>0&&(p.open||p.ai)) ctrl=`<button class="btn mini" type="button" data-seat="${i}" data-ai="${p.open?1:0}">${p.open?'Computer':'Freigeben'}</button>`;
-    return `<li class="${p.open?'open':''}"><span class="num">${i+1}</span><span class="pname">${p.open?'Freier Platz':esc(p.name)}</span><span class="ptags">${tags.join('')}</span>${ctrl}</li>`;
+    if(host&&i>0&&(p.open||p.ai)) ctrl=`<button class="btn mini" type="button" data-seat="${i}" data-ai="${p.open?1:0}">${p.open?t('computer'):t('release')}</button>`;
+    return `<li class="${p.open?'open':''}"><span class="num">${i+1}</span><span class="pname">${p.open?t('freeSeat'):esc(p.name)}</span><span class="ptags">${tags.join('')}</span>${ctrl}</li>`;
   }).join('');
   const open=st.players.filter(p=>p.open).length;
-  return `<div class="overlay"><div class="sheet" role="dialog" aria-label="Warteraum">
-    <h2>Warteraum</h2>
-    <p>Teile den Code oder den Link mit deinen Mitspielern. Sie öffnen das Spiel, wählen „Online“ und treten bei.</p>
-    <div class="codebox"><b id="roomCode">${ON.code}</b><div class="actions"><button class="btn" type="button" id="copyCode">Code kopieren</button><button class="btn" type="button" id="copyLink">Link kopieren</button></div></div>
+  return `<div class="overlay"><div class="sheet" role="dialog" aria-label="${t('waitingRoom')}">
+    <h2>${t('waitingRoom')}</h2>
+    <p>${t('lobbyIntro')}</p>
+    <div class="codebox"><b id="roomCode">${ON.code}</b><div class="actions"><button class="btn" type="button" id="copyCode">${t('copyCode')}</button><button class="btn" type="button" id="copyLink">${t('copyLink')}</button></div></div>
     <p class="hint linktext" id="linkText">${esc(link)}</p>
-    <div class="field"><span>Plätze · ${esc(mode)} · bis ${st.settings.target}</span><ul class="lobby">${rows}</ul></div>
-    ${host?`<p class="hint">${open?`Noch ${open} ${open===1?'Platz':'Plätze'} frei. Beim Start übernimmt dort der Computer.`:'Alle Plätze sind besetzt.'}</p>`:`<p class="hint">Warten, bis ${esc(st.players[0].name)} das Spiel startet.</p>`}
-    <div class="actions"><button class="btn" type="button" id="leaveRoom">Raum verlassen</button>${host?'<button class="btn primary" type="button" id="startRoom">Spiel starten</button>':''}</div>
+    <div class="field"><span>${esc(t('seatsHead',{m:mode,n:st.settings.target}))}</span><ul class="lobby">${rows}</ul></div>
+    ${host?`<p class="hint">${open?(open===1?t('openSeats1'):t('openSeatsN',{n:open})):t('allSeated')}</p>`:`<p class="hint">${esc(t('waitHost',{who:st.players[0].name}))}</p>`}
+    <div class="actions"><button class="btn" type="button" id="leaveRoom">${t('leaveRoom')}</button>${host?`<button class="btn primary" type="button" id="startRoom">${t('startGame')}</button>`:''}</div>
   </div></div>`;
 }
 function bindLobby(){
-  const copy=(text,label)=>{
-    const done=()=>toast(label+' kopiert.');
+  const copy=(text,msg)=>{
+    const done=()=>toast(msg);
     try{ navigator.clipboard.writeText(text).then(done,()=>selectText()); }catch(e){ selectText(); }
   };
-  const selectText=()=>{ const el=$('linkText'); const r=document.createRange(); r.selectNodeContents(el); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast('Link markiert, jetzt kopieren.'); };
-  $('copyCode').addEventListener('click',()=>copy(ON.code,'Code'));
-  $('copyLink').addEventListener('click',()=>copy(location.origin+location.pathname+'#'+ON.code,'Link'));
+  const selectText=()=>{ const el=$('linkText'); const r=document.createRange(); r.selectNodeContents(el); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast(t('linkSelected')); };
+  $('copyCode').addEventListener('click',()=>copy(ON.code,t('copiedCode')));
+  $('copyLink').addEventListener('click',()=>copy(location.origin+location.pathname+'#'+ON.code,t('copiedLink')));
   $('leaveRoom').addEventListener('click',()=>leaveOnline());
   const s=$('startRoom'); if(s) s.addEventListener('click',()=>{ s.disabled=true; onlineAction('start').finally(()=>{ if($('startRoom')) $('startRoom').disabled=false; }); });
   document.querySelectorAll('[data-seat]').forEach(b=>b.addEventListener('click',()=>{ b.disabled=true; onlineAction('seat',{seat:+b.dataset.seat,ai:b.dataset.ai==='1'}); }));
@@ -1286,6 +1516,7 @@ async function tryResume(){
 
 /* ---------- boot (keeps a running game across page updates) ---------- */
 function start(data){
+  applyLang();
   const hash=(location.hash||'').replace('#','').toUpperCase();
   if(/^[A-Z]{4}$/.test(hash)){ ui.joinCode=hash; saveSettings({...loadSettings(), where:'online'}); }
   if(data&&data.S&&data.S.online) data={};

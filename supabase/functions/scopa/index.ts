@@ -43,7 +43,7 @@ async function load(code: unknown) {
   const { data: room, error } = await sb.from('scopa_rooms').select('id,code,state,version')
     .eq('code', String(code || '').toUpperCase().trim()).maybeSingle();
   if (error) throw error;
-  if (!room) throw C.err('Diesen Raum gibt es nicht (mehr). Prüf den Code.', 404);
+  if (!room) throw C.err('Diesen Raum gibt es nicht (mehr). Prüf den Code.', 404, 'noRoom');
   const [{ data: sec }, { data: hands }] = await Promise.all([
     sb.from('scopa_secrets').select('data').eq('room_id', room.id).maybeSingle(),
     sb.from('scopa_hands').select('seat,token,cards').eq('room_id', room.id),
@@ -64,7 +64,7 @@ async function save(room: any, G: any, tokens: string[]) {
     p_secrets: { deck: G.deck || [], piles: G.piles || [], lastSide: G.lastSide ?? null }, p_hands: hands,
   });
   if (error) {
-    if (String(error.message).includes('scopa_conflict')) throw C.err('Jemand anderes war schneller. Versuch es gleich nochmal.', 409);
+    if (String(error.message).includes('scopa_conflict')) throw C.err('Jemand anderes war schneller. Versuch es gleich nochmal.', 409, 'conflict');
     throw error;
   }
   return data as number;
@@ -73,11 +73,11 @@ async function save(room: any, G: any, tokens: string[]) {
 const seatOf = (tokens: string[], tok: unknown) => (typeof tok === 'string' && tok.length >= 24 ? tokens.indexOf(tok) : -1);
 function requireSeat(tokens: string[], tok: unknown) {
   const s = seatOf(tokens, tok);
-  if (s < 0) throw C.err('Du sitzt nicht in diesem Raum.', 403);
+  if (s < 0) throw C.err('Du sitzt nicht in diesem Raum.', 403, 'notInRoom');
   return s;
 }
 function requireHost(tokens: string[], tok: unknown) {
-  if (requireSeat(tokens, tok) !== 0) throw C.err('Das darf nur der Gastgeber.', 403);
+  if (requireSeat(tokens, tok) !== 0) throw C.err('Das darf nur der Gastgeber.', 403, 'hostOnly');
 }
 
 async function handle(b: any) {
@@ -97,16 +97,16 @@ async function handle(b: any) {
         if (!error) room = data;
         else if (error.code !== '23505') throw error;
       }
-      if (!room) throw C.err('Konnte keinen freien Raum-Code finden. Versuch es nochmal.', 500);
+      if (!room) throw C.err('Konnte keinen freien Raum-Code finden. Versuch es nochmal.', 500, 'noCode');
       const tokens: string[] = [newToken()];
       const version = await save(room, G, tokens);
       return { code: room.code, roomId: room.id, seat: 0, token: tokens[0], version, state: C.publicState(G) };
     }
     case 'join': {
       const { room, G, tokens } = await load(b.code);
-      if (G.status !== 'lobby') throw C.err('In diesem Raum läuft das Spiel schon.', 409);
+      if (G.status !== 'lobby') throw C.err('In diesem Raum läuft das Spiel schon.', 409, 'started');
       const seat = G.players.findIndex((p: any) => p.open);
-      if (seat < 0) throw C.err('Der Raum ist schon voll.', 409);
+      if (seat < 0) throw C.err('Der Raum ist schon voll.', 409, 'full');
       G.players[seat] = { name: cleanName(b.name, `Spieler ${seat + 1}`), ai: false, open: false };
       tokens[seat] = newToken();
       const version = await save(room, G, tokens);
@@ -124,10 +124,10 @@ async function handle(b: any) {
     case 'seat': {
       const { room, G, tokens } = await load(b.code);
       requireHost(tokens, b.token);
-      if (G.status !== 'lobby') throw C.err('Das Spiel läuft schon.', 409);
+      if (G.status !== 'lobby') throw C.err('Das Spiel läuft schon.', 409, 'started');
       const s = Number(b.seat), p = G.players[s];
-      if (!p || s === 0) throw C.err('Diesen Platz gibt es nicht.');
-      if (!p.open && !p.ai) throw C.err('Auf diesem Platz sitzt schon jemand.', 409);
+      if (!p || s === 0) throw C.err('Diesen Platz gibt es nicht.', 400, 'noSeat');
+      if (!p.open && !p.ai) throw C.err('Auf diesem Platz sitzt schon jemand.', 409, 'seatTaken');
       G.players[s] = b.ai ? { name: pickCompName(G.players), ai: true, open: false } : { name: null, ai: false, open: true };
       const version = await save(room, G, tokens);
       return { ok: true, version, state: C.publicState(G) };
@@ -135,7 +135,7 @@ async function handle(b: any) {
     case 'start': {
       const { room, G, tokens } = await load(b.code);
       requireHost(tokens, b.token);
-      if (G.status !== 'lobby') throw C.err('Das Spiel läuft schon.', 409);
+      if (G.status !== 'lobby') throw C.err('Das Spiel läuft schon.', 409, 'started');
       // empty seats are taken by the computer
       G.players.forEach((p: any, i: number) => { if (p.open) G.players[i] = { name: pickCompName(G.players), ai: true, open: false }; });
       C.setupGame(G);
@@ -178,14 +178,14 @@ async function handle(b: any) {
       const { room, G, tokens } = await load(b.code);
       requireHost(tokens, b.token);
       const s = Number(b.seat), p = G.players[s];
-      if (!p || s === 0 || p.ai) throw C.err('Diesen Platz kann der Computer nicht übernehmen.');
+      if (!p || s === 0 || p.ai) throw C.err('Diesen Platz kann der Computer nicht übernehmen.', 400, 'cantReplace');
       p.ai = true;
       tokens[s] = newToken();
       const version = await save(room, G, tokens);
       return { ok: true, version, state: C.publicState(G) };
     }
     default:
-      throw C.err('Unbekannte Aktion.');
+      throw C.err('Unbekannte Aktion.', 400, 'unknown');
   }
 }
 
@@ -198,6 +198,6 @@ Deno.serve(async (req: Request) => {
   } catch (e: any) {
     const status = e && e.status ? e.status : 500;
     if (status === 500) console.error(e);
-    return json({ error: status === 500 ? 'Serverfehler, bitte nochmal versuchen.' : e.message }, status);
+    return json({ error: status === 500 ? 'Serverfehler, bitte nochmal versuchen.' : e.message, code: status === 500 ? 'server' : (e.code || '') }, status);
   }
 });

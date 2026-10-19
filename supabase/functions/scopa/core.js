@@ -95,18 +95,18 @@ function deal(G) {
 
 /* validates and applies a move; throws a user-facing error when it is not allowed */
 export function playMove(G, p, cardId, takeIds) {
-  if (G.status !== 'play') throw err('Gerade läuft keine Runde.');
-  if (G.turn !== p) throw err('Du bist nicht dran.');
+  if (G.status !== 'play') throw err('Gerade läuft keine Runde.', 400, 'noRound');
+  if (G.turn !== p) throw err('Du bist nicht dran.', 400, 'notTurn');
   const card = G.hands[p].find(c => c.id === cardId);
-  if (!card) throw err('Diese Karte hast du nicht auf der Hand.');
+  if (!card) throw err('Diese Karte hast du nicht auf der Hand.', 400, 'noCard');
   const opts = options(G, card);
   let opt = null;
   if (takeIds && takeIds.length) {
     const want = [...takeIds].sort().join(',');
     opt = opts.find(o => o.map(c => c.id).sort().join(',') === want);
-    if (!opt) throw err('Diese Karten darfst du mit dieser Karte nicht nehmen.');
+    if (!opt) throw err('Diese Karten darfst du mit dieser Karte nicht nehmen.', 400, 'badTake');
   } else if (opts.length) {
-    throw err('Mit dieser Karte musst du etwas vom Tisch nehmen.');
+    throw err('Mit dieser Karte musst du etwas vom Tisch nehmen.', 400, 'mustTake');
   }
   applyMove(G, p, card, opt);
 }
@@ -115,13 +115,14 @@ function applyMove(G, p, card, opt) {
   const side = G.players[p].side, who = G.players[p].name;
   G.hands[p] = G.hands[p].filter(c => c.id !== card.id);
   const lastPlay = G.deck.length === 0 && handTotal(G) === 0;
-  let scopa = false, text;
+  let scopa = false, text, kind = 'place';
   if (opt) {
     const set = new Set(opt.map(c => c.id));
     G.table = G.table.filter(c => !set.has(c.id));
     G.piles[side].push(card, ...opt);
     G.lastSide = side;
     const all = takesAll(G, card);
+    kind = all ? 'all' : 'take';
     if (G.table.length === 0 && !lastPlay && !all) { G.scope[side]++; scopa = true; }
     text = all
       ? `${who} spielt ${nm(card)} und nimmt den ganzen Tisch (${opt.length} Karten). Asso piglia tutto!`
@@ -131,7 +132,8 @@ function applyMove(G, p, card, opt) {
     G.table.push(card);
     text = `${who} legt ${nm(card)} auf den Tisch.`;
   }
-  G.log.push({ p, text });
+  // structured entry: every device writes it out in its own language
+  G.log.push({ p, kind, card, taken: opt || [], scopa, text });
   if (G.log.length > 60) G.log = G.log.slice(-60);
   G.lastMove[p] = G.log.length - 1;
   G.moveNo = (G.moveNo || 0) + 1;
@@ -165,20 +167,20 @@ function bestVec(vecs) {
 function scoreRound(G) {
   const P = G.piles, rows = [];
   const n = P.map(p => p.length);
-  rows.push({ label: 'Karten', vals: n, w: uniqueMax(n) });
+  rows.push({ key: 'cards', label: 'Karten', vals: n, w: uniqueMax(n) });
   const d = P.map(p => p.filter(c => c.s === 'D').length);
-  rows.push({ label: 'Denari', vals: d, w: uniqueMax(d) });
+  rows.push({ key: 'denari', label: 'Denari', vals: d, w: uniqueMax(d) });
   const sb = P.findIndex(p => p.some(c => c.s === 'D' && c.v === 7));
-  rows.push({ label: 'Settebello', vals: P.map((_, i) => (i === sb ? '✓' : '–')), w: sb < 0 ? null : sb });
+  rows.push({ key: 'settebello', label: 'Settebello', vals: P.map((_, i) => (i === sb ? '✓' : '–')), w: sb < 0 ? null : sb });
   if (G.settings.classic) {
     const x = P.map(primSum);
-    rows.push({ label: 'Primiera', vals: x.map(v => (v === null ? 'Farbe fehlt' : v)), w: uniqueMax(x) });
+    rows.push({ key: 'primiera', label: 'Primiera', vals: x, w: uniqueMax(x) });
   } else {
     const vecs = P.map(p => [7, 6, 1, 5, 4, 3, 2].map(v => cnt(p, v)));
-    rows.push({ label: 'Primiera', vals: P.map(p => `${cnt(p, 7)}× 7 · ${cnt(p, 6)}× 6`), w: bestVec(vecs) });
+    rows.push({ key: 'primiera', label: 'Primiera', vals: P.map(p => `${cnt(p, 7)}× 7 · ${cnt(p, 6)}× 6`), w: bestVec(vecs) });
   }
   rows.forEach(r => { r.pts = P.map((_, i) => (r.w === i ? 1 : 0)); });
-  rows.push({ label: 'Scope', vals: [...G.scope], pts: [...G.scope] });
+  rows.push({ key: 'scope', label: 'Scope', vals: [...G.scope], pts: [...G.scope] });
   return rows;
 }
 function endRound(G) {
@@ -216,9 +218,9 @@ export function aiMove(G, p) {
   return best;
 }
 export function playAI(G) {
-  if (G.status !== 'play') throw err('Gerade läuft keine Runde.');
+  if (G.status !== 'play') throw err('Gerade läuft keine Runde.', 400, 'noRound');
   const p = G.turn;
-  if (!G.players[p].ai) throw err('Ein Mensch ist dran.');
+  if (!G.players[p].ai) throw err('Ein Mensch ist dran.', 400, 'notTurn');
   const m = aiMove(G, p);
   applyMove(G, p, m.card, m.opt);
 }
@@ -235,4 +237,4 @@ export function publicState(G) {
   };
 }
 
-export function err(message, status = 400) { const e = new Error(message); e.status = status; return e; }
+export function err(message, status = 400, code = '') { const e = new Error(message); e.status = status; e.code = code; return e; }
