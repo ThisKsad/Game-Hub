@@ -91,6 +91,18 @@ header{display:flex; align-items:center; justify-content:space-between; gap:12px
 .deckpile{position:relative; flex:none; width:calc(var(--cw-pile) + 6px); height:calc(var(--cw-pile) * 1.53 + 6px); margin-right:10px; align-self:center}
 .deckpile .card.back{--cw:var(--cw-pile); position:absolute; left:calc(var(--i) * 3px); top:calc(var(--i) * -3px + 6px); border-width:2px; box-shadow:0 2px 4px rgba(0,0,0,.35)}
 .deckpile b{position:absolute; left:50%; top:55%; transform:translate(-50%,-50%); z-index:2; min-width:24px; padding:1px 6px; border-radius:999px; background:var(--felt-deep); color:var(--cream); border:1px solid var(--brass); font-size:12px; text-align:center; font-variant-numeric:tabular-nums}
+.handrow{display:grid; grid-template-columns:1fr auto 1fr; align-items:end; gap:8px}
+.mypile{justify-self:start; display:flex; flex-direction:column; align-items:center; gap:4px; padding-bottom:2px}
+.pilelbl{font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+.cpile{--pw:var(--cw-pile); position:relative; flex:none; width:calc(var(--pw) + 10px); height:calc(var(--pw) * 1.53 + 10px)}
+.cpile .card.back{--cw:var(--pw); position:absolute; left:5px; top:5px; border-width:2px; transform:rotate(var(--r)); box-shadow:0 2px 4px rgba(0,0,0,.35)}
+.cpile.empty::before{content:""; position:absolute; inset:5px; border:1.5px dashed var(--felt-line); border-radius:6px}
+.cpile b{position:absolute; left:50%; top:52%; transform:translate(-50%,-50%); z-index:2; min-width:22px; padding:1px 6px; border-radius:999px; background:var(--felt-deep); color:var(--cream); border:1px solid var(--brass); font-size:12px; text-align:center; font-variant-numeric:tabular-nums}
+.cpile.empty b{display:none}
+.opp-body{display:flex; align-items:center; justify-content:space-between; gap:8px}
+.opp .cpile{--pw:clamp(22px, 6vw, 30px)}
+.opp .cpile b{font-size:11px; min-width:18px; padding:0 4px}
+.card.flying{pointer-events:none; transition:none}
 .deckpile.gone{visibility:hidden; width:0; margin-right:0}
 .empty{color:var(--muted); font-style:italic}
 .card.target{transform:translateY(-6px); box-shadow:0 0 0 3px var(--brass), 0 10px 18px rgba(0,0,0,.35)}
@@ -182,7 +194,7 @@ table.sum{width:100%; border-collapse:collapse; font-variant-numeric:tabular-num
 .team.t0{border-color:var(--team-a); color:var(--team-a)}
 .team.t1{border-color:var(--team-b); color:var(--team-b)}
 .me{display:flex; gap:8px; align-items:center}
-.hand{--cw:var(--cw-hand); align-items:flex-start}
+.hand{--cw:var(--cw-hand); align-items:flex-start; min-width:calc(var(--cw-hand) * 3 + 20px)}
 .hand .back{--cw:var(--cw-hand); border-width:3px}
 .seats .seat{display:grid; grid-template-columns:18px minmax(0,1fr) 7.4em 36px; gap:8px; align-items:center}
 .seats.teams .seat{grid-template-columns:18px minmax(0,1fr) 7.4em 36px auto}
@@ -263,7 +275,7 @@ ul.lobby .team.t0{color:#9a6a12; border-color:#d6b46a} ul.lobby .team.t1{color:#
   <section class="table" id="table" aria-label="Tisch"></section>
   <p class="msg" id="msg" aria-live="polite"></p>
   <div class="opts" id="opts"></div>
-  <section class="hand" id="hand" aria-label="Karten auf der Hand"></section>
+  <div class="handrow"><div aria-hidden="true"></div><section class="hand" id="hand" aria-label="Karten auf der Hand"></section><div class="mypile" id="myPile"></div></div>
   <section class="zone">
     <div class="me" id="meName"></div>
     <div class="chips" id="myChips"></div>
@@ -490,6 +502,7 @@ function play(p,cardId,opt){
 }
 function commit(){
   if(!S.pending) return;
+  const fly=S.pending.ids?grabFlying():[];
   const {p,card,ids}=S.pending; S.pending=null;
   const side=sideOf(p);
   const lastPlay=S.deck.length===0&&handTotal()===0;
@@ -510,6 +523,7 @@ function commit(){
   if(isDu(S.turn)) S.msg+=' Du bist dran.';
   else if(!S.players[S.turn].ai) S.msg+=` ${label(S.turn)} ist dran.`;
   render(); proceed();
+  flyToPile(fly,side);
 }
 
 /* ---------- scoring ---------- */
@@ -630,7 +644,39 @@ function flash(side){
   document.body.appendChild(el); setTimeout(()=>el.remove(),1350);
 }
 function sideChips(side){
-  return `<span class="chip">Gesammelt <b>${S.piles[side].length}</b></span><span class="chip ${S.scope[side]?'hot':''}">Scope <b>${S.scope[side]}</b></span>`;
+  return `<span class="chip ${S.scope[side]?'hot':''}">Scope <b>${S.scope[side]}</b></span>`;
+}
+/* face-down pile of captured cards; it grows in layers like the deck shrinks */
+function pileHTML(side){
+  const n=S.piles[side]?S.piles[side].length:0, layers=n>20?3:n>8?2:n?1:0, rot=['-6deg','5deg','-2deg'];
+  return `<div class="cpile ${n?'':'empty'}" data-side="${side}" role="img" aria-label="Gesammelt: ${n} Karten">${Array.from({length:layers},(_,i)=>`<div class="card back" style="--r:${rot[i]}"></div>`).join('')}<b>${n}</b></div>`;
+}
+/* captured cards fly from the table into the capturer's pile */
+function grabFlying(){
+  return [...document.querySelectorAll('#table .card.taken, #table .card.incoming')].map(el=>({el:el.cloneNode(true), r:el.getBoundingClientRect()}));
+}
+function flyToPile(items,side){
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!items||!items.length||!ui.anim||reduce) return;
+  const target=document.querySelector(`#myPile .cpile[data-side="${side}"]`)||document.querySelector(`.cpile[data-side="${side}"]`);
+  if(!target) return;
+  const t=target.getBoundingClientRect();
+  if(!t.width) return;
+  items.forEach(({el,r},i)=>{
+    if(!el.animate||!r.width) return;
+    el.classList.remove('taken','incoming','opp','target'); el.classList.add('flying');
+    Object.assign(el.style,{position:'fixed',left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px',margin:'0',zIndex:'25'});
+    document.body.appendChild(el);
+    const dx=t.left+t.width/2-(r.left+r.width/2), dy=t.top+t.height/2-(r.top+r.height/2), sc=Math.max(.2,t.width/r.width);
+    const a=el.animate([{transform:'none',opacity:1},{transform:`translate(${dx}px,${dy}px) scale(${sc}) rotate(${i%2?9:-9}deg)`,opacity:.7}],
+      {duration:440, delay:i*55, easing:'cubic-bezier(.45,.05,.3,1)', fill:'forwards'});
+    a.onfinish=()=>el.remove();
+    setTimeout(()=>el.remove(),1600);
+  });
+  setTimeout(()=>{
+    const p=document.querySelector(`#myPile .cpile[data-side="${side}"]`)||document.querySelector(`.cpile[data-side="${side}"]`);
+    if(p&&p.animate) p.animate([{transform:'scale(1)'},{transform:'scale(1.14)'},{transform:'scale(1)'}],{duration:280, easing:'ease-out'});
+  }, 440+55*(items.length-1));
 }
 /* online host only: after 20 s of waiting, a silent player's seat can go to the computer */
 function replaceBtn(p){
@@ -654,7 +700,7 @@ function render(skipOverlay){
   const others=[]; for(let k=1;k<n;k++) others.push((bottom+k)%n);
   $('opps').innerHTML=others.map(p=>`<div data-seat="${p}" class="opp ${S.turn===p&&S.phase==='play'?'active':''}">
       <div class="top"><span class="name">${esc(label(p))}</span><span class="tags">${seatTag(p)}</span></div>${replaceBtn(p)}
-      <div class="opp-cards">${S.hand[p].map(()=>'<div class="card back" aria-hidden="true"></div>').join('')||'<span class="none">keine Karten</span>'}</div>
+      <div class="opp-body"><div class="opp-cards">${S.hand[p].map(()=>'<div class="card back" aria-hidden="true"></div>').join('')||'<span class="none">keine Karten</span>'}</div>${pileHTML(sideOf(p))}</div>
       ${S.teams?'':`<div class="chips">${sideChips(sideOf(p))}</div>`}
     </div>`).join('');
   $('opps').querySelectorAll('[data-replace]').forEach(b=>b.addEventListener('click',()=>{ b.disabled=true; onlineAction('replace',{seat:+b.dataset.replace}); }));
@@ -684,6 +730,7 @@ function render(skipOverlay){
   } else {
     $('hand').innerHTML=S.hand[bottom].map(()=>'<div class="card back" aria-hidden="true"></div>').join('');
   }
+  $('myPile').innerHTML=pileHTML(sideOf(bottom))+'<span class="pilelbl">Gesammelt</span>';
   $('meName').innerHTML=`<span class="who">${esc(label(bottom))}</span>${seatTag(bottom)}`;
   const side=sideOf(bottom);
   $('myChips').innerHTML=(S.teams?`<span class="chip">Team ${'AB'[side]}: ${esc(teamMembers(side))}</span>`:'')+sideChips(side)+`<span class="chip">Modus: ${(MODES[st.mode]||MODES.house).name}</span>`;
@@ -1061,6 +1108,7 @@ async function pump(){
 }
 async function applyRow(row,animate){
   const prev=ON.st, st=row.state, la=st.lastAction;
+  let fly=null;
   if(animate&&prev&&prev.status==='play'&&la&&la.moveNo===(prev.moveNo||0)+1){
     // show the move on the old table first, then the new state
     const hand=la.seat===ON.seat?ON.hand.filter(c=>c.id!==la.card.id):ON.hand;
@@ -1072,6 +1120,7 @@ async function applyRow(row,animate){
     await sleep(la.seat===ON.seat?500:1200);
     if(!ON) return;
     if(la.scopa) flash(st.players[la.seat].side);
+    if(la.taken.length) fly={items:grabFlying(), side:st.players[la.seat].side};
   }
   if(row.id) ON.roomId=row.id;
   if(prev&&prev.turn!==st.turn) ON.turnSince=Date.now();
@@ -1088,6 +1137,7 @@ async function applyRow(row,animate){
     else if(sum(st.handCounts)>sum(prev.handCounts)) S.dealt='hands';
   }
   render(ui.menu);
+  if(fly&&st.status==='play') flyToPile(fly.items,fly.side);
   onlineProceed();
 }
 function buildS(st,hand){
