@@ -156,6 +156,38 @@ table.sum{width:100%; border-collapse:collapse; font-variant-numeric:tabular-num
 .flash span{color:var(--cream); font-size:18px; text-shadow:0 2px 8px rgba(0,0,0,.6)}
 @keyframes flash{0%{opacity:0; transform:scale(.7)}18%{opacity:1; transform:scale(1.05)}30%{transform:scale(1)}80%{opacity:1}100%{opacity:0}}
 
+
+/* multi-player additions */
+:root{--cw-main:clamp(52px, 14.5vw, 82px); --team-a:#e0b25a; --team-b:#9fc6e8}
+.score{flex-wrap:wrap; row-gap:2px}
+.sc{display:inline-flex; align-items:baseline; gap:6px}
+.sc.t0 em{color:var(--team-a)} .sc.t1 em{color:var(--team-b)}
+.opps{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px}
+.opp{border:1px solid var(--felt-line); border-radius:10px; padding:8px 10px; display:flex; flex-direction:column; gap:6px; min-width:0; transition:border-color .2s, box-shadow .2s}
+.opp.active{border-color:var(--brass); box-shadow:0 0 0 1px var(--brass), 0 0 18px rgba(214,172,85,.18)}
+.opp .top{display:flex; justify-content:space-between; align-items:center; gap:6px; min-width:0}
+.opp .name{font-weight:700; color:var(--cream); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
+.opp .back{--cw:clamp(24px, 6.5vw, 34px); border-width:2px}
+.opp .none{font-size:13px; color:var(--muted); font-style:italic}
+.tags{display:flex; gap:4px; flex:none}
+.tag,.team{font-size:11px; letter-spacing:.06em; text-transform:uppercase; padding:1px 7px; border-radius:999px; border:1px solid var(--felt-line); color:var(--muted)}
+.team.t0{border-color:var(--team-a); color:var(--team-a)}
+.team.t1{border-color:var(--team-b); color:var(--team-b)}
+.me{display:flex; gap:8px; align-items:center}
+.hand .back{--cw:var(--cw-main); border-width:3px}
+.seats .seat{display:grid; grid-template-columns:22px 1fr auto auto; gap:8px; align-items:center}
+.seats .num{font-family:var(--display); font-weight:700; color:var(--wine); text-align:center}
+.seats input[type=text],.seats select{font:inherit; padding:8px 10px; border:1px solid #cdbf9f; border-radius:6px; background:#fffaf0; color:var(--ink); min-width:0}
+.seats input[type=text]:focus-visible,.seats select:focus-visible{outline:3px solid var(--brass); outline-offset:1px}
+.seats [data-team]{display:none; border-color:#cdbf9f}
+.seats.teams [data-team]{display:inline-block}
+.seats .team.t0{color:#9a6a12; border-color:#d6b46a} .seats .team.t1{color:#2f5d8a; border-color:#9ab9d6}
+.hint{font-size:14px}
+.log{margin:0; padding-left:18px; color:var(--ink); display:flex; flex-direction:column; gap:4px; font-size:15px}
+.sheet.wide{max-width:560px}
+.scroll{overflow-x:auto}
+.sum thead th small{display:block; font-size:11px; letter-spacing:0; text-transform:none; font-weight:400}
+
 @media (max-width:480px){
   .table{gap:7px; padding:28px 8px 10px}
   .hand{gap:8px}
@@ -172,17 +204,13 @@ table.sum{width:100%; border-collapse:collapse; font-variant-numeric:tabular-num
     <div class="score" id="score"></div>
     <button class="btn" id="menuBtn" type="button">Menü</button>
   </header>
-  <section class="zone" aria-label="Computer">
-    <div class="who">Computer</div>
-    <div class="opp-cards" id="oppHand"></div>
-    <div class="chips" id="oppChips"></div>
-  </section>
+  <section class="opps" id="opps" aria-label="Mitspieler"></section>
   <section class="table" id="table" aria-label="Tisch"></section>
   <p class="msg" id="msg" aria-live="polite"></p>
   <div class="opts" id="opts"></div>
-  <section class="hand" id="hand" aria-label="Deine Karten"></section>
-  <section class="zone" aria-label="Du">
-    <div class="who">Du</div>
+  <section class="hand" id="hand" aria-label="Karten auf der Hand"></section>
+  <section class="zone">
+    <div class="me" id="meName"></div>
     <div class="chips" id="myChips"></div>
   </section>
 </div>
@@ -286,36 +314,63 @@ function cardSVG(c){
 const cardDiv=(c,cls='')=>`<div class="card ${cls}" data-id="${c.id}" role="img" aria-label="${nm(c)}">${cardSVG(c)}</div>`;
 
 /* ---------- settings ---------- */
+const DEFAULT_SEATS=[{name:'Spieler 1',ai:false},{name:'Computer',ai:true},{name:'Spieler 3',ai:false},{name:'Spieler 4',ai:false}];
 function loadSettings(){
-  try{ const s=JSON.parse(localStorage.getItem('scopa-settings')); if(s&&s.target) return {target:s.target, classic:!!s.classic, values:s.values!==false}; }catch(e){}
-  return {target:11, classic:false, values:true};
+  let s={};
+  try{ s=JSON.parse(localStorage.getItem('scopa-settings'))||{}; }catch(e){}
+  const seats=DEFAULT_SEATS.map((d,i)=>{
+    const o=s.seats&&s.seats[i];
+    return {name:(o&&typeof o.name==='string'&&o.name.trim())||d.name, ai:o?!!o.ai:d.ai};
+  });
+  return {target:s.target===21?21:11, classic:!!s.classic, values:s.values!==false, players:[2,3,4].includes(s.players)?s.players:2, seats};
 }
 function saveSettings(s){ try{ localStorage.setItem('scopa-settings', JSON.stringify(s)); }catch(e){} }
 
 /* ---------- game state ---------- */
-let S=null, ui={menu:true, started:false, values:loadSettings().values};
+let S=null, ui={menu:true, started:false, values:loadSettings().values, revealed:null};
 let timers=[];
 const later=(ms,fn)=>timers.push(setTimeout(fn,ms));
 const clearTimers=()=>{timers.forEach(clearTimeout); timers=[];};
 const $=id=>document.getElementById(id);
+const esc=t=>String(t).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function newDeck(){const d=[];for(const s of SUITS)for(let v=1;v<=10;v++)d.push({s,v,id:s+v});return shuffle(d);}
 
+const N=()=>S.players.length;
+const humans=()=>S.players.map((p,i)=>p.ai?null:i).filter(i=>i!==null);
+const soloHuman=()=>humans().length===1;
+const sideOf=p=>S.players[p].side;
+/* "Du" when you play alone against computers, otherwise the player's name */
+const label=p=>soloHuman()&&!S.players[p].ai?'Du':S.players[p].name;
+const isDu=p=>label(p)==='Du';
+function sideLabel(i){
+  if(S.teams) return 'Team '+'AB'[i];
+  return label(i);
+}
+const teamMembers=i=>S.players.filter(p=>p.side===i).map(p=>p.name).join(' + ');
+
 function newGame(settings){
   clearTimers();
-  S={scores:[0,0], dealer:Math.random()<.5?0:1, round:0, settings:{...settings}, phase:'play'};
+  const n=settings.players;
+  const players=settings.seats.slice(0,n).map((s,i)=>({name:s.name.trim()||('Spieler '+(i+1)), ai:!!s.ai, side:n===4?i%2:i}));
+  if(players.every(p=>p.ai)) players[0].ai=false;
+  const sides=n===4?2:n;
+  S={players, teams:n===4, sides, scores:Array(sides).fill(0), dealer:Math.floor(Math.random()*n), round:0, settings:{...settings}, phase:'play'};
   startRound();
 }
 function startRound(){
-  S.round++; S.dealer=1-S.dealer;
-  S.deck=newDeck(); S.hand=[[],[]]; S.piles=[[],[]]; S.scope=[0,0];
+  const n=N();
+  S.round++; S.dealer=(S.dealer+1)%n;
+  S.deck=newDeck(); S.hand=Array.from({length:n},()=>[]);
+  S.piles=Array.from({length:S.sides},()=>[]); S.scope=Array(S.sides).fill(0);
   S.table=S.deck.splice(0,4); S.last=null; S.sel=null; S.pending=null; S.summary=null;
-  deal(); S.turn=1-S.dealer; S.phase='play';
-  S.msg=S.turn===0?'Du beginnst. Wähle eine Karte.':'Der Computer beginnt.';
-  render(); maybeAI();
+  S.log=[]; S.lastMove=Array(n).fill(-1);
+  deal(); S.turn=(S.dealer+1)%n; S.phase='play'; ui.revealed=null;
+  S.msg=isDu(S.turn)?'Du beginnst. Wähle eine Karte.':`${label(S.turn)} beginnt.`;
+  render(); proceed();
 }
-function deal(){const first=1-S.dealer;for(let i=0;i<3;i++){S.hand[first].push(S.deck.pop());S.hand[1-first].push(S.deck.pop());}}
+function deal(){const n=N();for(let i=0;i<3;i++)for(let k=0;k<n;k++)S.hand[(S.dealer+1+k)%n].push(S.deck.pop());}
 
 function options(card,table){
   const same=table.filter(t=>t.v===card.v);
@@ -329,84 +384,103 @@ function options(card,table){
   }
   return res;
 }
+const handTotal=()=>S.hand.reduce((s,h)=>s+h.length,0);
 
+function moveText(p,card,opt){
+  const du=isDu(p), who=label(p);
+  if(opt) return `${who} ${du?'spielst':'spielt'} ${nm(card)} und ${du?'nimmst':'nimmt'} ${opt.map(nm).join(' + ')}.`;
+  return `${who} ${du?'legst':'legt'} ${nm(card)} auf den Tisch.`;
+}
 function play(p,cardId,opt){
   if(S.pending||S.phase!=='play'||S.turn!==p) return;
   const card=S.hand[p].find(c=>c.id===cardId); if(!card) return;
   S.hand[p]=S.hand[p].filter(c=>c.id!==cardId); S.sel=null;
   S.pending={p,card,ids:opt?opt.map(c=>c.id):null};
-  const takes=opt?opt.map(nm).join(' + '):'';
-  S.msg = p===0
-    ? (opt?`Du spielst ${nm(card)} und nimmst ${takes}.`:`Du legst ${nm(card)} auf den Tisch.`)
-    : (opt?`Computer spielt ${nm(card)} und nimmt ${takes}.`:`Computer legt ${nm(card)} auf den Tisch.`);
+  S.msg=moveText(p,card,opt);
+  S.log.push({p,text:S.msg}); S.lastMove[p]=S.log.length-1;
   render();
-  later(p===1?1300:550, commit);
+  later(S.players[p].ai?1300:550, commit);
 }
 function commit(){
   if(!S.pending) return;
   const {p,card,ids}=S.pending; S.pending=null;
-  const lastPlay=S.deck.length===0&&S.hand[0].length===0&&S.hand[1].length===0;
+  const side=sideOf(p);
+  const lastPlay=S.deck.length===0&&handTotal()===0;
   if(ids){
     const set=new Set(ids), taken=S.table.filter(c=>set.has(c.id));
     S.table=S.table.filter(c=>!set.has(c.id));
-    S.piles[p].push(card,...taken); S.last=p;
-    if(S.table.length===0&&!lastPlay){S.scope[p]++; flash(p);}
+    S.piles[side].push(card,...taken); S.last=side;
+    if(S.table.length===0&&!lastPlay){
+      S.scope[side]++; flash(side);
+      S.log[S.log.length-1].text+=' Scopa!';
+    }
   } else S.table.push(card);
-  S.turn=1-p;
-  if(S.hand[0].length===0&&S.hand[1].length===0){
-    if(S.deck.length){ deal(); }
+  S.turn=(p+1)%N();
+  if(handTotal()===0){
+    if(S.deck.length) deal();
     else { endRound(); return; }
   }
-  if(S.turn===0) S.msg+=' Du bist dran.';
-  render(); maybeAI();
+  if(isDu(S.turn)) S.msg+=' Du bist dran.';
+  else if(!S.players[S.turn].ai) S.msg+=` ${label(S.turn)} ist dran.`;
+  render(); proceed();
 }
 
 /* ---------- scoring ---------- */
 const cnt=(p,v)=>p.filter(c=>c.v===v).length;
 function primSum(p){let sum=0;for(const s of SUITS){const cs=p.filter(c=>c.s===s);if(!cs.length)return null;sum+=Math.max(...cs.map(c=>PV[c.v]));}return sum;}
+function uniqueMax(vals){
+  let best=null, idx=null, tie=false;
+  vals.forEach((v,i)=>{ if(v===null) return; if(best===null||v>best){best=v; idx=i; tie=false;} else if(v===best) tie=true; });
+  return tie?null:idx;
+}
+function bestVec(vecs){
+  const cmp=(a,b)=>{for(let i=0;i<a.length;i++) if(a[i]!==b[i]) return a[i]-b[i]; return 0;};
+  let w=0, tie=false;
+  for(let i=1;i<vecs.length;i++){const c=cmp(vecs[i],vecs[w]); if(c>0){w=i; tie=false;} else if(c===0) tie=true;}
+  return tie?null:w;
+}
 function scoreRound(){
-  const [a,b]=S.piles, win=(x,y)=>x>y?0:y>x?1:null, rows=[];
-  rows.push({label:'Karten',a:a.length,b:b.length,w:win(a.length,b.length)});
-  const d=p=>p.filter(c=>c.s==='D').length;
-  rows.push({label:'Denari',a:d(a),b:d(b),w:win(d(a),d(b))});
-  const sb=p=>p.some(c=>c.s==='D'&&c.v===7);
-  rows.push({label:'Settebello',a:sb(a)?'✓':'–',b:sb(b)?'✓':'–',w:sb(a)?0:sb(b)?1:null});
+  const P=S.piles, rows=[];
+  const n=P.map(p=>p.length);
+  rows.push({label:'Karten', vals:n, w:uniqueMax(n)});
+  const d=P.map(p=>p.filter(c=>c.s==='D').length);
+  rows.push({label:'Denari', vals:d, w:uniqueMax(d)});
+  const sb=P.findIndex(p=>p.some(c=>c.s==='D'&&c.v===7));
+  rows.push({label:'Settebello', vals:P.map((_,i)=>i===sb?'✓':'–'), w:sb<0?null:sb});
   if(S.settings.classic){
-    const x=primSum(a), y=primSum(b);
-    const w = x===null&&y===null?null : x===null?1 : y===null?0 : win(x,y);
-    rows.push({label:'Primiera',a:x===null?'Farbe fehlt':x,b:y===null?'Farbe fehlt':y,w});
+    const x=P.map(primSum);
+    rows.push({label:'Primiera', vals:x.map(v=>v===null?'Farbe fehlt':v), w:uniqueMax(x)});
   } else {
-    let w=null; for(const v of [7,6,1,5,4,3,2]){const x=cnt(a,v),y=cnt(b,v); if(x!==y){w=x>y?0:1;break;}}
-    const show=p=>`${cnt(p,7)}× 7 · ${cnt(p,6)}× 6`;
-    rows.push({label:'Primiera',a:show(a),b:show(b),w});
+    const vecs=P.map(p=>[7,6,1,5,4,3,2].map(v=>cnt(p,v)));
+    rows.push({label:'Primiera', vals:P.map(p=>`${cnt(p,7)}× 7 · ${cnt(p,6)}× 6`), w:bestVec(vecs)});
   }
-  rows.forEach(r=>r.pts=[r.w===0?1:0,r.w===1?1:0]);
-  rows.push({label:'Scope',a:S.scope[0],b:S.scope[1],pts:[S.scope[0],S.scope[1]]});
+  rows.forEach(r=>r.pts=P.map((_,i)=>r.w===i?1:0));
+  rows.push({label:'Scope', vals:[...S.scope], pts:[...S.scope]});
   return rows;
 }
 function endRound(){
   const rest=S.table.length, restTo=S.last;
   if(rest&&restTo!==null) S.piles[restTo].push(...S.table);
   S.table=[];
-  const rows=scoreRound(), gained=[0,0];
-  rows.forEach(r=>{gained[0]+=r.pts[0]; gained[1]+=r.pts[1];});
-  S.scores[0]+=gained[0]; S.scores[1]+=gained[1];
-  const t=S.settings.target, [x,y]=S.scores;
-  const over=(x>=t||y>=t)&&x!==y;
-  S.summary={rows,rest,restTo,gained,winner:over?(x>y?0:1):null};
+  const rows=scoreRound(), gained=Array(S.sides).fill(0);
+  rows.forEach(r=>r.pts.forEach((v,i)=>gained[i]+=v));
+  gained.forEach((g,i)=>S.scores[i]+=g);
+  const t=S.settings.target, reached=S.scores.some(x=>x>=t), w=uniqueMax(S.scores);
+  const over=reached&&w!==null;
+  S.summary={rows,rest,restTo,gained,winner:over?w:null};
   S.phase=over?'gameEnd':'roundEnd';
-  S.msg='Runde vorbei.';
+  S.msg='Runde vorbei.'; ui.revealed=null;
   render();
 }
 
 /* ---------- computer ---------- */
 function worth(c){let w=1;if(c.s==='D')w+=2;if(c.v===7)w+=3;else if(c.v===6)w+=1.5;else if(c.v===1)w+=1;if(c.s==='D'&&c.v===7)w+=10;return w;}
 function risk(t){if(!t.length)return 0;const sum=t.reduce((s,c)=>s+c.v,0);return sum<=10?7:0;}
-function aiMove(){
-  const lastPlay=S.deck.length===0&&S.hand[0].length===0&&S.hand[1].length===1;
+function aiMove(p){
+  const lastPlay=S.deck.length===0&&handTotal()===1;
   let best=null;
   const consider=(card,opt,sc)=>{if(!best||sc>best.sc)best={card,opt,sc};};
-  for(const c of S.hand[1]){
+  for(const c of S.hand[p]){
     const opts=options(c,S.table);
     if(!opts.length){consider(c,null,-worth(c)*1.3-risk([...S.table,c])+Math.random()*.6);continue;}
     for(const o of opts){
@@ -419,66 +493,103 @@ function aiMove(){
   }
   return best;
 }
-function maybeAI(){
-  if(!S||ui.menu||S.phase!=='play'||S.turn!==1||S.pending) return;
-  later(750,()=>{ if(ui.menu||S.turn!==1||S.pending||S.phase!=='play') return; const m=aiMove(); play(1,m.card.id,m.opt); });
+/* decides what happens next: computer moves on its own, a human waits (behind the cover screen when several share the device) */
+function proceed(){
+  if(!S||ui.menu||S.phase!=='play'||S.pending) return;
+  const p=S.turn;
+  if(S.players[p].ai){
+    later(750,()=>{ if(ui.menu||S.turn!==p||S.pending||S.phase!=='play') return; const m=aiMove(p); play(p,m.card.id,m.opt); });
+  }
+}
+const needsCover=()=>S.phase==='play'&&!S.pending&&!ui.menu&&!S.players[S.turn].ai&&humans().length>1&&ui.revealed!==S.turn;
+function viewer(){
+  const h=humans();
+  if(h.length===1) return h[0];
+  if(ui.revealed===null) return null;
+  if(S.turn===ui.revealed&&!needsCover()) return ui.revealed;
+  if(S.pending&&S.pending.p===ui.revealed) return ui.revealed;
+  return null;
 }
 
 /* ---------- player input ---------- */
+function canAct(){const v=viewer(); return S.phase==='play'&&!S.pending&&!ui.menu&&v!==null&&v===S.turn;}
 function selectCard(id){
-  if(S.phase!=='play'||S.turn!==0||S.pending) return;
+  if(!canAct()) return;
+  const p=S.turn;
   if(S.sel===id){
-    const card=S.hand[0].find(c=>c.id===id), opts=options(card,S.table);
-    if(opts.length<=1){ play(0,id,opts[0]||null); return; }
+    const card=S.hand[p].find(c=>c.id===id), opts=options(card,S.table);
+    if(opts.length<=1){ play(p,id,opts[0]||null); return; }
   }
   S.sel=id; render();
 }
 function tableClick(id){
-  if(!S.sel||S.turn!==0||S.pending) return;
-  const card=S.hand[0].find(c=>c.id===S.sel), opts=options(card,S.table).filter(o=>o.some(c=>c.id===id));
-  if(opts.length===1) play(0,S.sel,opts[0]);
+  if(!S.sel||!canAct()) return;
+  const p=S.turn, card=S.hand[p].find(c=>c.id===S.sel);
+  if(!card) return;
+  const opts=options(card,S.table).filter(o=>o.some(c=>c.id===id));
+  if(opts.length===1) play(p,S.sel,opts[0]);
 }
 function highlight(ids){
   document.querySelectorAll('#table .card').forEach(el=>el.classList.toggle('target',!!ids&&ids.includes(el.dataset.id)));
 }
 
 /* ---------- rendering ---------- */
-function flash(p){
+function flash(side){
   const el=document.createElement('div'); el.className='flash';
-  el.innerHTML=`<b>Scopa!</b><span>${p===0?'Punkt für dich':'Punkt für den Computer'}</span>`;
+  const who=S.teams?`Team ${'AB'[side]}`:(isDu(side)?'dich':label(side));
+  el.innerHTML=`<b>Scopa!</b><span>Punkt für ${esc(who)}</span>`;
   document.body.appendChild(el); setTimeout(()=>el.remove(),1350);
 }
-function chips(p){
-  return `<span class="chip">Gesammelt <b>${S.piles[p].length}</b></span><span class="chip ${S.scope[p]?'hot':''}">Scope <b>${S.scope[p]}</b></span>`;
+function sideChips(side){
+  return `<span class="chip">Gesammelt <b>${S.piles[side].length}</b></span><span class="chip ${S.scope[side]?'hot':''}">Scope <b>${S.scope[side]}</b></span>`;
+}
+function seatTag(p){
+  const pl=S.players[p], bits=[];
+  if(S.teams) bits.push(`<span class="team t${pl.side}">Team ${'AB'[pl.side]}</span>`);
+  if(pl.ai) bits.push('<span class="tag">Computer</span>');
+  return bits.join('');
 }
 function render(skipOverlay){
-  const st=S.settings;
-  $('score').innerHTML=`<em>Du</em><b>${S.scores[0]}</b><span class="sep">:</span><b>${S.scores[1]}</b><em>Computer</em><small>bis ${st.target}</small>`;
-  const oppCount=S.hand[1].length;
-  $('oppHand').innerHTML=Array.from({length:oppCount},()=>'<div class="card back" aria-hidden="true"></div>').join('')||'<span class="chip">keine Karten</span>';
-  $('oppChips').innerHTML=chips(1);
-  $('myChips').innerHTML=chips(0)+`<span class="chip">Primiera: ${st.classic?'klassisch':'einfach'}</span>`;
+  const st=S.settings, n=N(), v=viewer(), bottom=v!==null?v:S.turn;
+  const myTurn=canAct();
+
+  $('score').innerHTML=S.scores.map((x,i)=>`<span class="sc ${S.teams?'t'+i:''}" ${S.teams?`title="${esc(teamMembers(i))}"`:''}><em>${esc(sideLabel(i))}</em><b>${x}</b></span>`).join('<span class="sep">·</span>')+`<small>bis ${st.target}</small>`;
+
+  // other seats, in turn order after the bottom seat
+  const others=[]; for(let k=1;k<n;k++) others.push((bottom+k)%n);
+  $('opps').innerHTML=others.map(p=>`<div class="opp ${S.turn===p&&S.phase==='play'?'active':''}">
+      <div class="top"><span class="name">${esc(label(p))}</span><span class="tags">${seatTag(p)}</span></div>
+      <div class="opp-cards">${S.hand[p].map(()=>'<div class="card back" aria-hidden="true"></div>').join('')||'<span class="none">keine Karten</span>'}</div>
+      ${S.teams?'':`<div class="chips">${sideChips(sideOf(p))}</div>`}
+    </div>`).join('');
 
   // table
   const P=S.pending, taken=new Set(P&&P.ids?P.ids:[]);
   let selOpts=[];
-  if(S.sel){const card=S.hand[0].find(c=>c.id===S.sel); if(card) selOpts=options(card,S.table);}
+  if(S.sel&&myTurn){const card=S.hand[S.turn].find(c=>c.id===S.sel); if(card) selOpts=options(card,S.table);}
   const autoIds=selOpts.length===1?selOpts[0].map(c=>c.id):[];
   let html=`<div class="deck">Stapel <b>${S.deck.length}</b></div>`;
   html+=S.table.map(c=>cardDiv(c,taken.has(c.id)?'taken':autoIds.includes(c.id)?'target':'')).join('');
-  if(P) html+=cardDiv(P.card,'incoming'+(P.p===1?' opp':''));
+  if(P) html+=cardDiv(P.card,'incoming'+(P.p!==v?' opp':''));
   if(!S.table.length&&!P) html+='<span class="empty">Der Tisch ist leer.</span>';
   $('table').innerHTML=html;
   $('table').querySelectorAll('.card[data-id]').forEach(el=>el.addEventListener('click',()=>tableClick(el.dataset.id)));
 
   $('msg').textContent=S.msg||'';
 
-  // hand
-  const myTurn=S.phase==='play'&&S.turn===0&&!P&&!ui.menu;
-  const hand=[...S.hand[0]].sort((a,b)=>a.v-b.v||a.s.localeCompare(b.s));
+  // bottom seat: your hand (face up only when it is really yours to see)
+  const face=v===bottom;
   $('hand').className='hand'+(myTurn?'':' wait');
-  $('hand').innerHTML=hand.map(c=>`<button type="button" class="card ${S.sel===c.id?'sel':''}" data-id="${c.id}" aria-label="${nm(c)}" ${myTurn?'':'disabled'}>${cardSVG(c)}</button>`).join('');
-  $('hand').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>selectCard(b.dataset.id)));
+  if(face){
+    const hand=[...S.hand[bottom]].sort((a,b)=>a.v-b.v||a.s.localeCompare(b.s));
+    $('hand').innerHTML=hand.map(c=>`<button type="button" class="card ${S.sel===c.id?'sel':''}" data-id="${c.id}" aria-label="${nm(c)}" ${myTurn?'':'disabled'}>${cardSVG(c)}</button>`).join('');
+    $('hand').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>selectCard(b.dataset.id)));
+  } else {
+    $('hand').innerHTML=S.hand[bottom].map(()=>'<div class="card back" aria-hidden="true"></div>').join('');
+  }
+  $('meName').innerHTML=`<span class="who">${esc(label(bottom))}</span>${seatTag(bottom)}`;
+  const side=sideOf(bottom);
+  $('myChips').innerHTML=(S.teams?`<span class="chip">Team ${'AB'[side]}: ${esc(teamMembers(side))}</span>`:'')+sideChips(side)+`<span class="chip">Primiera: ${st.classic?'klassisch':'einfach'}</span>`;
 
   // options
   let o='';
@@ -490,7 +601,7 @@ function render(skipOverlay){
   $('opts').innerHTML=o;
   $('opts').querySelectorAll('button').forEach(b=>{
     const i=+b.dataset.o, op=selOpts[i];
-    b.addEventListener('click',()=>play(0,S.sel,i<0?null:op));
+    b.addEventListener('click',()=>play(S.turn,S.sel,i<0?null:op));
     if(selOpts.length>1&&op){
       b.addEventListener('mouseenter',()=>highlight(op.map(c=>c.id)));
       b.addEventListener('focus',()=>highlight(op.map(c=>c.id)));
@@ -504,15 +615,40 @@ function render(skipOverlay){
 
 function renderOverlay(){
   const ov=$('overlay');
-  if(ui.menu){ ov.innerHTML=menuHTML(); bindMenu(); return; }
+  if(ui.menu){ if(!$('menuForm')){ ov.innerHTML=menuHTML(); bindMenu(); } return; }
   if(S.phase==='roundEnd'||S.phase==='gameEnd'){ ov.innerHTML=summaryHTML(); bindSummary(); return; }
+  if(needsCover()){ ov.innerHTML=coverHTML(); $('reveal').addEventListener('click',()=>{ui.revealed=S.turn; render();}); $('reveal').focus(); return; }
   ov.innerHTML='';
+}
+function coverHTML(){
+  const p=S.turn, name=esc(S.players[p].name);
+  const since=S.log.slice(S.lastMove[p]+1);
+  const list=since.length?`<div class="field"><span>${S.lastMove[p]<0?'Bisher in dieser Runde':'Seit deinem letzten Zug'}</span><ul class="log">${since.map(e=>`<li>${esc(e.text)}</li>`).join('')}</ul></div>`:'';
+  return `<div class="overlay"><div class="sheet" role="dialog" aria-label="${name} ist dran">
+    <h2>${name} ist dran</h2>
+    <p>Gib das Gerät an ${name}. Alle anderen schauen bitte weg.</p>
+    ${list}
+    <div class="actions"><button class="btn primary" type="button" id="reveal">Karten aufdecken</button></div>
+  </div></div>`;
 }
 function menuHTML(){
   const s=loadSettings();
+  const seatRows=s.seats.map((seat,i)=>`<div class="seat" id="seat${i}" ${i>=s.players?'hidden':''}>
+      <span class="num">${i+1}</span>
+      <input type="text" id="name${i}" value="${esc(seat.name)}" maxlength="16" aria-label="Name Platz ${i+1}">
+      <select id="ai${i}" aria-label="Platz ${i+1} besetzt durch"><option value="0" ${seat.ai?'':'selected'}>Mensch</option><option value="1" ${seat.ai?'selected':''}>Computer</option></select>
+      <span class="team t${i%2}" data-team>${'AB'[i%2]}</span>
+    </div>`).join('');
   return `<div class="overlay"><form class="sheet" id="menuForm">
     <h2>Scopa</h2>
-    <p>Das italienische Kartenspiel für zwei, mit 40 Karten gegen den Computer.</p>
+    <p>Für 2 bis 4 Spieler an einem Gerät. Freie Plätze übernimmt auf Wunsch der Computer.</p>
+    <div class="field"><span>Spieler</span>
+      <div class="seg">${[2,3,4].map(k=>`<label><input type="radio" name="players" id="p${k}" value="${k}" ${s.players===k?'checked':''}><span>${k}</span></label>`).join('')}</div>
+    </div>
+    <div class="field seats ${s.players===4?'teams':''}" id="seats"><span>Plätze in Spielreihenfolge</span>${seatRows}
+      <p class="hint" id="teamHint" ${s.players===4?'':'hidden'}>Zu viert spielen Platz 1 und 3 (Team A) gegen Platz 2 und 4 (Team B).</p>
+      <p class="hint" id="humanHint">Sind mehrere Menschen dabei, wird das Gerät reihum weitergegeben. Vor jedem Zug verdeckt ein Hinweis die Karten.</p>
+    </div>
     <div class="field"><span>Gespielt wird bis</span>
       <div class="seg">
         <label><input type="radio" name="target" id="t11" value="11" ${s.target===11?'checked':''}><span>11 Punkte</span></label>
@@ -530,40 +666,55 @@ function menuHTML(){
       <li>Jeder hat 3 Karten, zu Beginn liegen 4 offen auf dem Tisch.</li>
       <li>Spiele eine Karte: Nimm eine Tischkarte mit gleichem Wert oder mehrere, deren Summe passt. Eine einzelne passende Karte hat Vorrang.</li>
       <li>Wer den Tisch abräumt, macht eine Scopa (1 Punkt), außer mit dem letzten Zug der Runde.</li>
-      <li>Je 1 Punkt für meiste Karten, meiste Denari, Settebello (7 di Denari) und Primiera.</li>
+      <li>Je 1 Punkt für meiste Karten, meiste Denari, Settebello (7 di Denari) und Primiera. Bei Gleichstand gibt es keinen Punkt.</li>
       <li>Werte: Ass 1, 2–7, Fante 8, Cavallo 9, Re 10.</li>
     </ul></details>
   </form></div>`;
 }
 function bindMenu(){
+  const count=()=>[2,3,4].find(k=>$('p'+k).checked);
+  const sync=()=>{
+    const k=count();
+    for(let i=0;i<4;i++) $('seat'+i).hidden=i>=k;
+    $('teamHint').hidden=k!==4;
+    $('seats').classList.toggle('teams',k===4);
+  };
+  [2,3,4].forEach(k=>$('p'+k).addEventListener('change',sync));
   $('menuForm').addEventListener('submit',e=>{
     e.preventDefault();
-    const s={target:$('t21').checked?21:11, classic:$('classic').checked, values:$('values').checked};
-    saveSettings(s); ui.menu=false; ui.started=true; newGame(s);
+    const players=count();
+    const seats=[0,1,2,3].map(i=>({name:$('name'+i).value.trim()||DEFAULT_SEATS[i].name, ai:$('ai'+i).value==='1'}));
+    if(seats.slice(0,players).every(x=>x.ai)) seats[0].ai=false;
+    const s={target:$('t21').checked?21:11, classic:$('classic').checked, values:$('values').checked, players, seats};
+    saveSettings(s); ui.menu=false; ui.started=true; ui.values=s.values;
+    $('overlay').innerHTML='';
+    newGame(s);
   });
   $('values').addEventListener('change',e=>{
     ui.values=e.target.checked;
     saveSettings({...loadSettings(), values:ui.values});
     render(true);
   });
-  const r=$('resume'); if(r) r.addEventListener('click',()=>{ui.menu=false; render(); maybeAI();});
+  const r=$('resume'); if(r) r.addEventListener('click',()=>{ui.menu=false; $('overlay').innerHTML=''; render(); proceed();});
 }
 function summaryHTML(){
-  const m=S.summary, name=['dir','den Computer'];
-  const rows=m.rows.map(r=>`<tr><th>${r.label}</th>
-    <td class="${r.pts[0]?'win':''}">${r.a}${r.pts[0]?`<span class="pt">+${r.pts[0]}</span>`:''}</td>
-    <td class="${r.pts[1]?'win':''}">${r.b}${r.pts[1]?`<span class="pt">+${r.pts[1]}</span>`:''}</td></tr>`).join('');
-  const head = S.phase==='gameEnd'
-    ? (m.winner===0?'Gewonnen!':'Der Computer gewinnt')
-    : `Runde ${S.round} vorbei`;
-  const restNote = m.rest&&m.restTo!==null?`<p class="note">Die letzten ${m.rest} Tischkarten gingen an ${name[m.restTo]}.</p>`:'';
-  const tie = S.phase==='roundEnd'&&S.scores[0]===S.scores[1]&&S.scores[0]>=S.settings.target?'<p class="note">Gleichstand am Ziel, es geht weiter.</p>':'';
-  return `<div class="overlay"><div class="sheet" role="dialog" aria-label="${head}">
+  const m=S.summary, cols=S.scores.map((_,i)=>i);
+  const headCell=i=>`<th>${esc(sideLabel(i))}${S.teams?`<small>${esc(teamMembers(i))}</small>`:''}</th>`;
+  const rows=m.rows.map(r=>`<tr><th>${r.label}</th>${cols.map(i=>`<td class="${r.pts[i]?'win':''}">${r.vals[i]}${r.pts[i]?`<span class="pt">+${r.pts[i]}</span>`:''}</td>`).join('')}</tr>`).join('');
+  let head;
+  if(S.phase==='gameEnd'){
+    const w=m.winner;
+    head = S.teams ? `Team ${'AB'[w]} gewinnt` : (isDu(w)?'Gewonnen!':`${esc(label(w))} gewinnt`);
+  } else head=`Runde ${S.round} vorbei`;
+  const restWho = m.restTo===null?'':(S.teams?`Team ${'AB'[m.restTo]}`:(isDu(m.restTo)?'dich':esc(label(m.restTo))));
+  const restNote = m.rest&&m.restTo!==null?`<p class="note">Die letzten ${m.rest} Tischkarten gingen an ${restWho}.</p>`:'';
+  const tie = S.phase==='roundEnd'&&S.scores.some(x=>x>=S.settings.target)?'<p class="note">Gleichstand an der Spitze, es geht weiter.</p>':'';
+  return `<div class="overlay"><div class="sheet wide" role="dialog" aria-label="${head}">
     <h2>${head}</h2>
-    <table class="sum"><thead><tr><th></th><th>Du</th><th>Computer</th></tr></thead>
+    <div class="scroll"><table class="sum"><thead><tr><th></th>${cols.map(headCell).join('')}</tr></thead>
       <tbody>${rows}</tbody>
-      <tfoot><tr><th>Diese Runde</th><td>+${m.gained[0]}</td><td>+${m.gained[1]}</td></tr>
-      <tr class="total"><th>Gesamt</th><td>${S.scores[0]}</td><td>${S.scores[1]}</td></tr></tfoot></table>
+      <tfoot><tr><th>Diese Runde</th>${cols.map(i=>`<td>+${m.gained[i]}</td>`).join('')}</tr>
+      <tr class="total"><th>Gesamt</th>${cols.map(i=>`<td>${S.scores[i]}</td>`).join('')}</tr></tfoot></table></div>
     ${restNote}${tie}
     <div class="actions">${S.phase==='gameEnd'
       ?'<button class="btn" type="button" id="toMenu">Menü</button><button class="btn primary" type="button" id="again">Nochmal spielen</button>'
@@ -573,15 +724,19 @@ function summaryHTML(){
 function bindSummary(){
   const n=$('next'); if(n) n.addEventListener('click',startRound);
   const a=$('again'); if(a) a.addEventListener('click',()=>newGame(S.settings));
-  const t=$('toMenu'); if(t) t.addEventListener('click',()=>{ui.menu=true; render();});
+  const t=$('toMenu'); if(t) t.addEventListener('click',()=>{ui.menu=true; $('overlay').innerHTML=''; render();});
 }
 
-$('menuBtn').addEventListener('click',()=>{ui.menu=true; render();});
+$('menuBtn').addEventListener('click',()=>{ui.menu=true; $('overlay').innerHTML=''; render();});
 
 /* ---------- boot (keeps a running game across page updates) ---------- */
 function start(data){
-  if(data&&data.S){ S=data.S; ui=data.ui||ui; if(ui.values===undefined) ui.values=loadSettings().values; if(S.pending){ const p=S.pending; S.pending=null; S.hand[p.p].push(p.card); } render(); maybeAI(); }
-  else { newGame(loadSettings()); }
+  if(data&&data.S&&data.S.players){
+    S=data.S; ui={...ui,...(data.ui||{})};
+    if(ui.values===undefined) ui.values=loadSettings().values;
+    if(S.pending){ const p=S.pending; S.pending=null; S.hand[p.p].push(p.card); S.log.pop(); }
+    render(); proceed();
+  } else { newGame(loadSettings()); }
 }
 window.claude?.hot?.snapshot?.(()=>({S,ui}));
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});

@@ -6,11 +6,11 @@ Unsere selbstgebauten Browser-Spiele. Jedes Spiel liegt in einem eigenen Ordner 
 
 | Spiel | Ordner | Stand |
 |---|---|---|
-| Scopa | [`scopa/`](scopa/) | Gegen den Computer, Ziel 11 oder 21 Punkte, einfache oder klassische Primiera |
+| Scopa | [`scopa/`](scopa/) | 2–4 Spieler an einem Gerät (Plätze auch mit Computer), zu viert in Teams, Ziel 11 oder 21, einfache oder klassische Primiera |
 
 ## Geplant
 
-- Scopa online gegen andere
+- Scopa: jeder am eigenen Handy (Raum-Code)
 - Eigenes Kartenspiel mit eigenen Karten
 - 2D-Spiel
 - 3D-Spiel
