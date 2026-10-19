@@ -317,8 +317,10 @@ function cardSVG(c){
 const cardDiv=(c,cls='')=>`<div class="card ${cls}" data-id="${c.id}" role="img" aria-label="${nm(c)}">${cardSVG(c)}</div>`;
 
 /* ---------- settings ---------- */
-const COMP_NAMES=['Don Denari','Settebello-Sepp','Primiera-Paolo','Scopatron 3000','Nonna Bytes','Robo Ravioli','Cavallo Calcolo','Re Algoritmo','Mamma Mia 2.0','Bastoni-Bot','Luigi Logik','Signora Silicio'];
-const isCompName=n=>!n||n==='Computer'||COMP_NAMES.includes(n);
+const COMP_NAMES=['Don Denari','Settebello-Sepp','Primiera-Paolo','Scopatron 3000','Nonna Bytes','Robo Ravioli','Cavallo Calcolo'];
+/* names that were in the list before; still recognised so saved seats get a current name */
+const RETIRED=['Computer','Re Algoritmo','Mamma Mia 2.0','Bastoni-Bot','Luigi Logik','Signora Silicio'];
+const isCompName=n=>!n||RETIRED.includes(n)||COMP_NAMES.includes(n);
 const DEFAULT_SEATS=[{name:'Spieler 1',ai:false},{name:'Don Denari',ai:true},{name:'Spieler 3',ai:false},{name:'Spieler 4',ai:false}];
 function loadSettings(){
   let s={};
@@ -327,7 +329,7 @@ function loadSettings(){
     const o=s.seats&&s.seats[i];
     const ai=o?!!o.ai:d.ai;
     let name=(o&&typeof o.name==='string'&&o.name.trim())||d.name;
-    if(ai&&name==='Computer') name=COMP_NAMES[i];
+    if(ai&&RETIRED.includes(name)) name=COMP_NAMES[i];
     return {name, ai};
   });
   return {target:s.target===21?21:11, classic:!!s.classic, values:s.values!==false, players:[2,3,4].includes(s.players)?s.players:2, teams:s.teams!==false, seats};
