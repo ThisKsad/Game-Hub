@@ -359,7 +359,7 @@ de:{
   modeChip:"Modus: {m}", teamChip:"Team {x}: {m}", replace:"Computer übernimmt", scopaPoint:"Punkt für {who}",
   ariaOpps:"Mitspieler", ariaTable:"Tisch", ariaHand:"Karten auf der Hand", player:"Spieler {n}",
   cantTake:"Mit dieser Karte kannst du nichts nehmen.", placeOnTable:"Auf den Tisch legen", takeAll:"Ganzen Tisch nehmen ({n} Karten)",
-  take:"Nehmen: {c}", chooseTake:"Wähle, was du nimmst:", tapHint:"Tippe eine Karte an. Zweimal tippen spielt sie direkt.",
+  take:"Nehmen: {c}", chooseTake:"Wähle, was du nimmst:", tapHint:"Tippe eine Karte an und bestätige dann darunter.",
   blocked1:"Die Kombination {c} ist nicht erlaubt, weil eine passende Einzelkarte auf dem Tisch liegt.",
   blockedN:"Die Kombinationen {c} sind nicht erlaubt, weil eine passende Einzelkarte auf dem Tisch liegt.", or:"oder",
   startsYou:"Du beginnst. Wähle eine Karte.", starts:"{who} beginnt.", yourTurn:"Du bist dran.", theirTurn:"{who} ist dran.", roundOver:"Runde vorbei.",
@@ -417,7 +417,7 @@ en:{
   modeChip:"Mode: {m}", teamChip:"Team {x}: {m}", replace:"Computer takes over", scopaPoint:"Point for {who}",
   ariaOpps:"Other players", ariaTable:"Table", ariaHand:"Your hand", player:"Player {n}",
   cantTake:"You can't take anything with this card.", placeOnTable:"Put on the table", takeAll:"Take the whole table ({n} cards)",
-  take:"Take: {c}", chooseTake:"Choose what to take:", tapHint:"Tap a card. Tap it twice to play it right away.",
+  take:"Take: {c}", chooseTake:"Choose what to take:", tapHint:"Tap a card, then confirm below.",
   blocked1:"The combination {c} is not allowed because a matching single card is on the table.",
   blockedN:"The combinations {c} are not allowed because a matching single card is on the table.", or:"or",
   startsYou:"You start. Pick a card.", starts:"{who} starts.", yourTurn:"Your turn.", theirTurn:"{who}'s turn.", roundOver:"Round over.",
@@ -475,7 +475,7 @@ pt:{
   modeChip:"Modo: {m}", teamChip:"Time {x}: {m}", replace:"Computador assume", scopaPoint:"Ponto para {who}",
   ariaOpps:"Outros jogadores", ariaTable:"Mesa", ariaHand:"Sua mão", player:"Jogador {n}",
   cantTake:"Com esta carta você não pode pegar nada.", placeOnTable:"Colocar na mesa", takeAll:"Pegar a mesa inteira ({n} cartas)",
-  take:"Pegar: {c}", chooseTake:"Escolha o que pegar:", tapHint:"Toque em uma carta. Toque duas vezes para jogá-la direto.",
+  take:"Pegar: {c}", chooseTake:"Escolha o que pegar:", tapHint:"Toque em uma carta e depois confirme abaixo.",
   blocked1:"A combinação {c} não é permitida porque há uma carta igual sozinha na mesa.",
   blockedN:"As combinações {c} não são permitidas porque há uma carta igual sozinha na mesa.", or:"ou",
   startsYou:"Você começa. Escolha uma carta.", starts:"{who} começa.", yourTurn:"Sua vez.", theirTurn:"Vez de {who}.", roundOver:"Fim da rodada.",
@@ -1050,10 +1050,6 @@ function canAct(){const v=viewer(); return S.phase==='play'&&!S.pending&&!ui.men
 function selectCard(id){
   if(!canAct()) return;
   const p=S.turn;
-  if(S.sel===id){
-    const card=S.hand[p].find(c=>c.id===id), opts=options(card,S.table);
-    if(opts.length<=1){ play(p,id,opts[0]||null); return; }
-  }
   S.sel=id; render();
 }
 function tableClick(id){
