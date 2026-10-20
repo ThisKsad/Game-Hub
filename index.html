@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#173a2c">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="scopa/apple-touch-icon.png">
+<title>Game Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Alegreya+Sans:wght@400;500;700&display=swap">
+<style>
+:root{
+  --felt:#245442; --felt-deep:#173a2c; --felt-line:#3a6b57;
+  --brass:#d6ac55; --brass-soft:rgba(214,172,85,.18);
+  --cream:#f6efdf; --ink:#2b2218; --ink-soft:#6c5f4c; --wine:#8c2c2a;
+  --text:#ede7d7; --muted:#a8bdac;
+  --display:"Cinzel", "Trajan Pro", Georgia, serif;
+  --body:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%; margin:0}
+body{
+  background-color:var(--felt-deep);
+  background-image:radial-gradient(ellipse 80% 70% at 50% 35%, var(--felt) 0%, var(--felt-deep) 100%);
+  background-attachment:fixed;
+  color:var(--text); font-family:var(--body); font-size:17px; line-height:1.45;
+}
+.wrap{max-width:880px; margin:0 auto; padding:max(28px, env(safe-area-inset-top)) 16px max(32px, env(safe-area-inset-bottom))}
+header{display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:28px}
+h1{font-family:var(--display); font-weight:700; font-size:clamp(30px, 8vw, 44px); letter-spacing:.12em; color:var(--brass); margin:0; line-height:1.1}
+.sub{color:var(--muted); margin:6px 0 0}
+.langs{display:flex; gap:4px; flex:none; padding-top:6px}
+.lang{font:700 13px var(--body); letter-spacing:.04em; color:var(--muted); background:transparent; border:1px solid var(--felt-line); border-radius:6px; padding:5px 8px; cursor:pointer}
+.lang.on{color:var(--felt-deep); background:var(--brass); border-color:var(--brass)}
+.lang:focus-visible,.tile:focus-visible{outline:2px solid var(--brass); outline-offset:3px}
+h2{font-family:var(--display); font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:32px 0 12px; font-weight:600}
+.grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:14px}
+.tile{display:flex; gap:16px; align-items:center; text-decoration:none; color:var(--ink); background:var(--cream); border-radius:14px; padding:18px; box-shadow:0 6px 18px rgba(0,0,0,.35); transition:transform .15s ease, box-shadow .15s ease}
+a.tile:hover{transform:translateY(-3px); box-shadow:0 10px 24px rgba(0,0,0,.42)}
+.tile svg{flex:none; width:64px; height:64px}
+.tile h3{font-family:var(--display); font-size:22px; letter-spacing:.06em; color:var(--wine); margin:0}
+.tile p{margin:2px 0 0; color:var(--ink-soft); font-size:15px}
+.tags{display:flex; flex-wrap:wrap; gap:5px; margin-top:8px}
+.tags span{font-size:12px; font-weight:700; letter-spacing:.03em; color:var(--felt); background:rgba(36,84,66,.1); border-radius:999px; padding:2px 8px}
+.play{margin-left:auto; flex:none; font:700 14px var(--body); color:var(--cream); background:var(--wine); border-radius:999px; padding:7px 14px}
+.featured{grid-column:1/-1}
+.soon{position:relative; flex-direction:column; align-items:flex-start; gap:12px; background:transparent; color:var(--text); border:1.5px dashed var(--felt-line); box-shadow:none}
+.soon h3{color:var(--cream); font-size:18px}
+.soon p{color:var(--muted)}
+.soon svg{width:48px; height:48px; opacity:.75}
+.badge{position:absolute; top:16px; right:16px; font:700 12px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--brass); border:1px solid var(--brass-soft); background:var(--brass-soft); border-radius:999px; padding:4px 10px}
+footer{margin-top:40px; color:var(--muted); font-size:14px; text-align:center}
+@media (max-width:480px){
+  .featured{flex-wrap:wrap}
+  .featured .play{margin-left:0; width:100%; text-align:center; padding:10px 14px}
+}
+@media (prefers-reduced-motion:reduce){a.tile{transition:none} a.tile:hover{transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Game Hub</h1>
+      <p class="sub" data-t="tagline"></p>
+    </div>
+    <div class="langs" role="group" data-t-aria="language"></div>
+  </header>
+
+  <h2 data-t="playNow"></h2>
+  <div class="grid">
+    <a class="tile featured" href="scopa/">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <g transform="rotate(-14 32 36)"><rect x="11" y="9" width="29" height="45" rx="4" fill="#8c2c2a" stroke="#2b2218" stroke-opacity=".25" stroke-width="2"/><path d="M17 16l17 31M34 16l-17 31" stroke="#f6efdf" stroke-opacity=".35" stroke-width="2"/></g>
+        <g transform="rotate(10 32 36)"><rect x="23" y="9" width="29" height="45" rx="4" fill="#fffaf0" stroke="#245442" stroke-width="2.5"/>
+          <circle cx="37.5" cy="31.5" r="9" fill="#b8860b" stroke="#6b4e0a" stroke-width="1.6"/><circle cx="37.5" cy="31.5" r="5.4" fill="none" stroke="#f3e2a8" stroke-width="1.6"/><circle cx="37.5" cy="31.5" r="1.9" fill="#6b4e0a"/></g>
+      </svg>
+      <div>
+        <h3>Scopa</h3>
+        <p data-t="scopaDesc"></p>
+        <div class="tags"><span data-t="tagPlayers"></span><span data-t="tagLocal"></span><span data-t="tagOnline"></span><span data-t="tagModes"></span></div>
+      </div>
+      <span class="play" data-t="play"></span>
+    </a>
+  </div>
+
+  <h2 data-t="planned"></h2>
+  <div class="grid">
+    <div class="tile soon">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="8" width="20" height="30" rx="3" fill="none" stroke="#d6ac55" stroke-width="2.5" transform="rotate(-10 19 23)"/><rect x="19" y="10" width="20" height="30" rx="3" fill="#173a2c" stroke="#d6ac55" stroke-width="2.5" transform="rotate(8 29 25)"/><path d="M29 20l1.8 3.7 4 .6-2.9 2.8.7 4-3.6-1.9-3.6 1.9.7-4-2.9-2.8 4-.6z" fill="#d6ac55" transform="rotate(8 29 25)"/></svg>
+      <div><h3 data-t="ownCards"></h3><p data-t="ownCardsDesc"></p></div>
+      <span class="badge" data-t="soon"></span>
+    </div>
+    <div class="tile soon">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="30" width="36" height="6" rx="1.5" fill="#d6ac55"/><rect x="26" y="20" width="10" height="5" rx="1.5" fill="none" stroke="#d6ac55" stroke-width="2.5"/><rect x="11" y="18" width="8" height="12" rx="2" fill="none" stroke="#d6ac55" stroke-width="2.5"/><circle cx="31" cy="12" r="2.5" fill="#d6ac55"/></svg>
+      <div><h3 data-t="game2d"></h3><p data-t="game2dDesc"></p></div>
+      <span class="badge" data-t="soon"></span>
+    </div>
+    <div class="tile soon">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6l15 8.5v17L24 40 9 31.5v-17z" fill="none" stroke="#d6ac55" stroke-width="2.5" stroke-linejoin="round"/><path d="M9 14.5L24 23l15-8.5M24 23v17" fill="none" stroke="#d6ac55" stroke-width="2.5" stroke-linejoin="round"/></svg>
+      <div><h3 data-t="game3d"></h3><p data-t="game3dDesc"></p></div>
+      <span class="badge" data-t="soon"></span>
+    </div>
+  </div>
+
+  <footer data-t="footer"></footer>
+</div>
+<script>
+const LANGS={de:'Deutsch',en:'English',pt:'Português (Brasil)'};
+const I18N={
+  de:{tagline:'Unsere selbstgebauten Browser-Spiele', language:'Sprache', playNow:'Jetzt spielen', play:'Spielen',
+    scopaDesc:'Das italienische Kartenspiel – Karten von der Mitte holen, Scopa machen, Punkte sammeln.',
+    tagPlayers:'2–4 Spieler', tagLocal:'Ein Gerät', tagOnline:'Online per Raum-Code', tagModes:'4 Regelmodi',
+    planned:'In Arbeit', soon:'Bald',
+    ownCards:'Eigenes Kartenspiel', ownCardsDesc:'Eigene Regeln, eigene Karten.',
+    game2d:'2D-Spiel', game2dDesc:'Der nächste Schritt: Bewegung, Level, Action.',
+    game3d:'3D-Spiel', game3dDesc:'Das große Ziel.',
+    footer:'Läuft direkt im Browser – auf dem Handy auch zum Startbildschirm hinzufügen.'},
+  en:{tagline:'Our home-made browser games', language:'Language', playNow:'Play now', play:'Play',
+    scopaDesc:'The Italian card game – capture cards from the table, make a scopa, rack up points.',
+    tagPlayers:'2–4 players', tagLocal:'One device', tagOnline:'Online via room code', tagModes:'4 rule modes',
+    planned:'In the works', soon:'Soon',
+    ownCards:'Our own card game', ownCardsDesc:'Our own rules, our own cards.',
+    game2d:'2D game', game2dDesc:'The next step: movement, levels, action.',
+    game3d:'3D game', game3dDesc:'The big goal.',
+    footer:'Runs right in the browser – on your phone you can add it to the home screen.'},
+  pt:{tagline:'Nossos jogos de navegador feitos em casa', language:'Idioma', playNow:'Jogar agora', play:'Jogar',
+    scopaDesc:'O jogo de cartas italiano – pegue cartas da mesa, faça scopa, some pontos.',
+    tagPlayers:'2–4 jogadores', tagLocal:'Um aparelho', tagOnline:'Online por código de sala', tagModes:'4 modos de regras',
+    planned:'Em produção', soon:'Em breve',
+    ownCards:'Nosso próprio jogo de cartas', ownCardsDesc:'Regras próprias, cartas próprias.',
+    game2d:'Jogo 2D', game2dDesc:'O próximo passo: movimento, fases, ação.',
+    game3d:'Jogo 3D', game3dDesc:'O grande objetivo.',
+    footer:'Roda direto no navegador – no celular dá para adicionar à tela inicial.'}
+};
+function readScopa(){ try{ return JSON.parse(localStorage.getItem('scopa-settings'))||{}; }catch(e){ return {}; } }
+function detectLang(){
+  const s=readScopa(); if(LANGS[s.lang]) return s.lang;
+  const n=(navigator.language||'de').toLowerCase();
+  return n.startsWith('pt')?'pt':n.startsWith('en')?'en':n.startsWith('de')?'de':'en';
+}
+let LANG=detectLang();
+const langBox=document.querySelector('.langs');
+function render(){
+  const d=I18N[LANG];
+  document.documentElement.lang=LANG==='pt'?'pt-BR':LANG;
+  document.querySelectorAll('[data-t]').forEach(el=>{ el.textContent=d[el.dataset.t]; });
+  langBox.setAttribute('aria-label',d.language);
+  langBox.innerHTML=Object.keys(LANGS).map(k=>`<button type="button" class="lang ${k===LANG?'on':''}" data-lang="${k}" aria-pressed="${k===LANG}" title="${LANGS[k]}">${k==='pt'?'PT-BR':k.toUpperCase()}</button>`).join('');
+}
+langBox.addEventListener('click',e=>{
+  const b=e.target.closest('.lang'); if(!b||b.dataset.lang===LANG) return;
+  LANG=b.dataset.lang;
+  /* gleiche Sprache auch in Scopa übernehmen */
+  try{ const s=readScopa(); s.lang=LANG; localStorage.setItem('scopa-settings', JSON.stringify(s)); }catch(e){}
+  render();
+});
+render();
+</script>
+</body>
+</html>

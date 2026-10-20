@@ -2,6 +2,8 @@
 
 Unsere selbstgebauten Browser-Spiele. Jedes Spiel liegt in einem eigenen Ordner und läuft direkt im Browser (einfach die `index.html` öffnen).
 
+Die Startseite (`index.html` im Hauptordner) verlinkt alle Spiele und zeigt, was geplant ist. Neue Spiele bekommen dort eine eigene Kachel.
+
 ## Spiele
 
 | Spiel | Ordner | Stand |
