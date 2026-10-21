@@ -12,7 +12,7 @@
   const DEFAULT_CFG = {
     life: 20, deckSize: 20, startHand: 4, handLimit: 8, maxEnergy: 8,
     fieldMode: 'grow', growAt: 'spring2', startSeason: 'spring',
-    overwriteHolder: true, compensation: 'none', damageStays: true, weathering: true
+    overwriteHolder: true, compensation: 'none', damageStays: true, weathering: true, openAttack: false, lateDamage: false
   };
 
   /* ---------- Zufall (mit Startwert, damit Simulationen reproduzierbar sind) ---------- */
@@ -235,6 +235,13 @@
     const changed = nx !== prev;
     if (changed && nx === 'spring') { state.springs += 1; state.year += 1; }
     log(state, 'Runde ' + state.round + ': ' + SN[nx] + (changed ? '' : ' (verlängert)') + '.', 'round');
+    /* Testoption Zeitdruck: ab dem dritten Jahr verlieren beide zu jedem Rundenbeginn steigend Lebenskraft */
+    if (state.cfg.lateDamage && state.year >= 3) {
+      state.lateN = (state.lateN || 0) + 1;
+      state.players.forEach(function (pl) { pl.life -= state.lateN; });
+      log(state, 'Zeitdruck: Beide Spieler verlieren ' + state.lateN + ' Lebenskraft.', 'damage');
+      checkWin(state);
+    }
 
     eachUnit(state, function (u, p, s) {
       delete u.tmpDef; delete u.tmpRound; delete u.dmg; delete u.dmgRound;
@@ -360,7 +367,10 @@
     }
     const guards = list.filter(function (x) { return isGuard(state, x.inst, x.s); });
     if (guards.length) return guards.map(function (x) { return x.uid; });
-    return list.map(function (x) { return x.uid; });
+    const out = list.map(function (x) { return x.uid; });
+    /* Testoption: freier Platz gegenüber und kein Wächter erlaubt den direkten Angriff */
+    if (state.cfg.openAttack && !list.some(function (x) { return x.s === s; })) out.push('player');
+    return out;
   }
   function doAttack(state, uid, target) {
     const a = findUnit(state, uid);
