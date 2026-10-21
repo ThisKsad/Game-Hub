@@ -111,5 +111,16 @@
       'linear-gradient(90deg, ' + bg(prev) + ' 0%, ' + bg(prev) + ' 8%, ' + bg(cur) + ' 16%, ' + bg(cur) + ' 84%, ' + bg(next) + ' 92%, ' + bg(next) + ' 100%)';
   }
 
-  root.TEMPORA_DECOR = { svg: svg, background: background, COLOR: COLOR };
+  function mix(a, b) {
+    const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+    const ch = function (sh) { return Math.round((((pa >> sh) & 255) + ((pb >> sh) & 255)) / 2); };
+    return 'rgb(' + ch(16) + ',' + ch(8) + ',' + ch(0) + ')';
+  }
+  /* Ein Bild pro Jahreszeit für das laufende Band im Startmenü */
+  function panel(prev, cur, next) {
+    const l = mix(COLOR[prev], COLOR[cur]), r = mix(COLOR[cur], COLOR[next]);
+    return '<div class="bgpanel" style="background:linear-gradient(90deg,' + l + ' 0%,' + COLOR[cur] + ' 14%,' + COLOR[cur] + ' 86%,' + r + ' 100%)">' +
+      '<svg viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g>' + SIDE[cur] + '</g><g transform="translate(1280 0) scale(-1 1)">' + SIDE[cur] + '</g><g>' + FRAME[cur] + '</g></svg></div>';
+  }
+  root.TEMPORA_DECOR = { svg: svg, background: background, panel: panel, COLOR: COLOR };
 })(this);

@@ -152,18 +152,31 @@
   function openMenu() {
     show('menu');
     const root = $('#menu');
-    const deckOpts = (DECKS || []).map(function (d) { return [d.id, d.name + ' (' + d.cards.length + ')']; });
     if (DECKS && !deckById(S.myDeck) && DECKS.length) { S.myDeck = DECKS[0].id; saveSettings(); }
-    root.innerHTML = '<div class="page">' +
-      '<div class="topbar"><a class="iconbtn" href="../" aria-label="Zurück zum Game Hub">' + ICON.door + '</a><h1>' + GAME_NAME + '</h1></div>' +
-      '<div class="hero"><div style="width:84px;height:84px;flex:none">' + ICON.wheel + '</div><div><h2 style="font-size:24px">Das Duell der Jahreszeiten</h2><p>Testphase: Spiele gegen den Computer und probiere Regeln aus.</p></div></div>' +
+    const order = ['spring', 'summer', 'autumn', 'winter'];
+    let strip = '';
+    for (let k = 0; k < 2; k++) order.forEach(function (x, i) { strip += DECOR.panel(order[(i + 3) % 4], x, order[(i + 1) % 4]); });
+    const tiles = DECKS ? DECKS.map(function (d) {
+      const lead = leadCard(d);
+      const n = seasonDist(d.cards), tot = d.cards.length || 1;
+      return '<button class="dtile' + (S.myDeck === d.id ? ' on' : '') + '" data-deck="' + d.id + '" aria-pressed="' + (S.myDeck === d.id) + '">' +
+        (lead ? mini(cardHTML(lead), 77, 0.55) : '<div style="width:77px;height:112px"></div>') +
+        '<span class="dinfo"><b>' + esc(d.name) + '</b><span>' + d.cards.length + ' / ' + S.deckSize + ' Karten</span>' +
+        '<span class="dist">' + ['spring', 'summer', 'autumn', 'winter', 'none'].map(function (k) { return '<span style="width:' + (n[k] / tot * 100) + '%;background:' + SC[k].b + '"></span>'; }).join('') + '</span></span></button>';
+    }).join('') : '<p class="note">Decks werden geladen …</p>';
+    const diff = [['easy', 'Leicht'], ['medium', 'Mittel'], ['hard', 'Schwer']].map(function (x) {
+      return '<button class="seg' + (S.difficulty === x[0] ? ' on' : '') + '" data-diff="' + x[0] + '" aria-pressed="' + (S.difficulty === x[0]) + '">' + x[1] + '</button>';
+    }).join('');
+    root.innerHTML = '<div class="menubg" aria-hidden="true"><div class="bgstrip">' + strip + '</div><div class="menushade"></div></div>' +
+      '<div class="page menupage">' +
+      '<div class="topbar"><a class="iconbtn glass" href="../" aria-label="Zurück zum Game Hub">' + ICON.door + '</a></div>' +
+      '<div class="title"><div class="wheel">' + ICON.wheel + '</div><h1>' + GAME_NAME + '</h1><p>Das Duell der Jahreszeiten · Testphase</p></div>' +
       (OFFLINE ? '<div class="banner">Der Server ist gerade nicht erreichbar. Du kannst mit den Startdecks spielen, Änderungen an Decks werden aber nicht gespeichert.</div>' : '') +
-      '<div class="menu-actions"><button class="btn primary" id="mPlay" style="min-width:160px">Spielen</button><button class="btn" id="mDecks">Decks</button><button class="btn" id="mRules">Regeln</button></div>' +
-      '<div class="panel" style="margin-bottom:16px"><div class="opts" style="margin-top:0">' +
-      (DECKS ? opt('myDeck', 'Dein Deck', deckOpts) : '<div class="opt"><span class="lbl">Dein Deck</span><span class="note">Decks werden geladen …</span></div>') +
-      opt('difficulty', 'Schwierigkeit', [['easy', 'Leicht'], ['medium', 'Mittel'], ['hard', 'Schwer']]) +
-      '</div><p class="note" id="mWarn" style="margin:10px 0 0"></p></div>' +
-      '<details class="panel" id="mOpts"><summary>Testoptionen</summary><div class="opts">' +
+      '<div class="menu-actions center"><button class="btn primary big" id="mPlay">Spielen</button><button class="btn glassbtn" id="mDecks">Decks</button><button class="btn glassbtn" id="mRules">Regeln</button></div>' +
+      '<div class="panel glass" style="margin-bottom:16px"><div class="lblrow"><span class="lbl">Dein Deck</span></div><div class="dtiles">' + tiles + '</div>' +
+      '<div class="lblrow" style="margin-top:14px"><span class="lbl">Schwierigkeit</span></div><div class="segs" role="group" aria-label="Schwierigkeit">' + diff + '</div>' +
+      '<p class="note" id="mWarn" style="margin:10px 0 0"></p></div>' +
+      '<details class="panel glass" id="mOpts"><summary>Testoptionen</summary><div class="opts">' +
       '<div class="group-title">Gegner</div>' +
       opt('aiDeck', 'Deck des Computers', [['random', 'Zufällig'], ['spring', 'Frühlings-Startdeck'], ['summer', 'Sommer-Startdeck'], ['autumn', 'Herbst-Startdeck'], ['winter', 'Winter-Startdeck']]) +
       opt('first', 'Wer beginnt', [['random', 'Zufällig'], ['me', 'Du'], ['ai', 'Computer']]) +
@@ -200,10 +213,20 @@
       S.player = v; S.myDeck = null; saveSettings(); DECKS = null; openMenu(); loadDecks().then(openMenu);
     });
     $('#mReset').onclick = function () { const p = S.player, d = S.myDeck; S = Object.assign({}, DEFAULTS, { player: p, myDeck: d }); saveSettings(); openMenu(); $('#mOpts').open = true; };
+    root.querySelectorAll('[data-deck]').forEach(function (b) { b.onclick = function () { S.myDeck = b.dataset.deck; saveSettings(); drawMenuKeepScroll(); }; });
+    root.querySelectorAll('[data-diff]').forEach(function (b) { b.onclick = function () { S.difficulty = b.dataset.diff; saveSettings(); drawMenuKeepScroll(); }; });
     $('#mPlay').onclick = startGame;
     $('#mDecks').onclick = function () { openDecks(); };
     $('#mRules').onclick = showRules;
     updateWarn();
+  }
+  function drawMenuKeepScroll() { const y = window.scrollY; const open = $('#mOpts') && $('#mOpts').open; openMenu(); if (open) $('#mOpts').open = true; window.scrollTo(0, y); }
+  const LEAD = { spring: 'baer', summer: 'drache', autumn: 'hirsch', winter: 'winterkoenig' };
+  function leadCard(d) {
+    if (d.starter_key && LEAD[d.starter_key] && d.cards.indexOf(LEAD[d.starter_key]) >= 0) return LEAD[d.starter_key];
+    const units = d.cards.filter(function (id) { return BY_ID[id] && !BY_ID[id].anchor; });
+    const pool = units.length ? units : d.cards.filter(function (id) { return BY_ID[id]; });
+    return pool.sort(function (a, b) { return BY_ID[b].cost - BY_ID[a].cost; })[0] || null;
   }
   function deckProblem(deck) {
     if (!deck) return 'Bitte wähle ein Deck.';

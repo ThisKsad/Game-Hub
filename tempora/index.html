@@ -54,6 +54,36 @@ details[open].panel>summary::after{content:"▴"}
 .note{color:var(--muted); font-size:14px}
 .banner{background:#5A3A22; border:1px solid #A8501E; border-radius:12px; padding:10px 14px; margin-bottom:16px}
 
+/* ---------- Startmenü mit laufendem Jahreszeiten-Band ---------- */
+.menubg{position:fixed; inset:0; overflow:hidden; z-index:0; background:#2E2C29}
+.bgstrip{display:flex; height:100%; width:max-content; animation:bandslide 160s linear infinite}
+.bgpanel{height:100vh; aspect-ratio:16/9; flex:none; position:relative}
+.bgpanel svg{position:absolute; inset:0; width:100%; height:100%}
+@keyframes bandslide{to{transform:translateX(-50%)}}
+.menushade{position:absolute; inset:0; background:radial-gradient(ellipse 70% 75% at 50% 45%, rgba(30,27,24,.82) 0%, rgba(30,27,24,.6) 60%, rgba(30,27,24,.15) 100%)}
+.menupage{position:relative; z-index:1}
+.title{text-align:center; margin:4px 0 22px}
+.title .wheel{width:110px; height:110px; margin:0 auto 6px; animation:spin 60s linear infinite; filter:drop-shadow(0 6px 14px rgba(0,0,0,.45))}
+.title h1{font-size:clamp(44px, 9vw, 72px); letter-spacing:.08em; text-shadow:0 4px 18px rgba(0,0,0,.6)}
+.title p{margin:4px 0 0; color:#E9E6E0; font-size:18px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.bgstrip,.title .wheel{animation:none}}
+.menu-actions.center{justify-content:center}
+.btn.big{min-height:54px; min-width:200px; font-size:20px; border-radius:27px}
+.glass{background:rgba(42,41,38,.82); backdrop-filter:blur(6px)}
+.glassbtn{background:rgba(42,41,38,.7)}
+.iconbtn.glass{background:rgba(42,41,38,.7)}
+.lblrow .lbl{font-size:13px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
+.dtiles{display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:10px; margin-top:8px}
+.dtile{display:flex; gap:12px; align-items:center; text-align:left; padding:8px; border-radius:14px; border:2px solid var(--line); background:#2A2926; color:var(--paper)}
+.dtile:hover{border-color:var(--muted)}
+.dtile.on{border-color:#F2C94C; box-shadow:0 0 0 2px rgba(242,201,76,.35)}
+.dinfo{display:flex; flex-direction:column; gap:6px; min-width:0; flex:1}
+.dinfo b{font-size:16px} .dinfo>span{font-size:13px; color:var(--muted)}
+.segs{display:flex; gap:6px; margin-top:8px; flex-wrap:wrap}
+.seg{min-height:42px; padding:0 18px; border-radius:21px; border:1.5px solid var(--line); background:#2A2926; color:var(--paper); font-weight:700}
+.seg.on{background:var(--paper); color:var(--ink); border-color:var(--paper)}
+
 /* ---------- Passwort ---------- */
 .gate{min-height:100%; display:grid; place-items:center; padding:24px}
 .gate form{width:min(380px, 100%); display:flex; flex-direction:column; gap:14px; text-align:center}
