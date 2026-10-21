@@ -599,9 +599,29 @@
       '<div class="handrow"><div class="hint">' + ctl.hint + '</div>' + hand + '<div class="side-actions">' + ctl.buttons + '</div></div>' +
       '</div>' +
       '<div class="toast" id="toast" style="opacity:' + (G.toast ? 1 : 0) + '">' + esc(G.toast) + '</div>' +
+      seasonPanel(st) +
       (G.showEnd && st.winner !== null ? endScreenHTML() : '');
   }
 
+  /* Fenster unten links: was in der aktuellen Jahreszeit gerade gilt */
+  function seasonPanel(st) {
+    const fa = function (id) { return E.fieldActive(st, id); };
+    const L = {
+      spring: [['Verschieben', 'Eine Karte pro Zug auf einen freien Platz'], ['Aufblühen', 'Jetzt gespielte Karten +1 Verteidigung ab dem Sommer']],
+      summer: [['Lange Tage', 'Gespielte Einheiten haben Eile'], ['Sonnenplatz', 'Mitte +2 Angriff' + (fa('gleissend') ? ', Nachbarplätze +1' : '')]],
+      autumn: [['Ernte', '+1 Karte zu Zugbeginn'], ['Vergänglichkeit', 'Zerstörte Einheiten kehren im Frühling zurück' + (fa('laubdecke') ? ' (volle Werte)' : '')]],
+      winter: [['Eis', 'Äußere Plätze gesperrt, Karten dort ruhen'], ['Frost', 'Ohne Winter-Heimat ' + (fa('dauerfrost') ? '−2' : '−1') + ' Verteidigung']]
+    }[st.season].slice();
+    if (st.season === 'winter' && fa('spaetherbst')) L.push(['Spätherbst', 'Vergänglichkeit gilt auch jetzt']);
+    if (st.season === 'winter' && fa('innerewaerme')) L.push(['Innere Wärme', 'Effekte im Eis wirken weiter']);
+    let king = false;
+    st.players.forEach(function (pl) { pl.field.forEach(function (sl, s) { if (sl && sl.u && sl.u.id === 'winterkoenig' && E.abilities(st, sl.u, s)) king = true; }); });
+    if (king) L.push(['Ewiger Winter', 'Der Winter endet nicht, solange der Winterkönig liegt']);
+    if (fa('tagundnacht')) L.push(['Tagundnachtgleiche', 'Keine Jahreszeiten-Rabatte']);
+    if (fa('steinkreis')) L.push(['Steinkreis', 'Neutrale Einheiten unberührt']);
+    return '<div class="seasonfx" style="--sc:' + COSTBG[st.season] + '"><div class="sfh"><span class="si">' + SICON[st.season] + '</span>' + SN[st.season] + '</div>' +
+      L.map(function (x) { return '<div class="sfl"><b>' + esc(x[0]) + ':</b> ' + esc(x[1]) + '</div>'; }).join('') + '</div>';
+  }
   function controls() {
     const st = G.state;
     const b = [];
