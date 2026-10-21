@@ -42,7 +42,7 @@
     player: 'lukas', difficulty: 'medium', aiDeck: 'random', first: 'random', myDeck: null,
     startSeason: 'spring', turnMode: 'alternate', fieldMode: 'grow', growAt: 'spring2',
     life: 20, deckSize: 20, startHand: 4, handLimit: 8, copies: 1,
-    mulligan: false, aiSpeed: 'normal', overwriteHolder: true, compensation: 'none', allowIncomplete: false, cardBack: 'jahreskreis'
+    mulligan: false, aiSpeed: 'normal', damageStays: true, weathering: true, overwriteHolder: true, compensation: 'none', allowIncomplete: false, cardBack: 'jahreskreis'
   };
   let S = loadSettings();
   function loadSettings() { try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}); } catch (e) { return Object.assign({}, DEFAULTS); } }
@@ -193,6 +193,7 @@
       chk('mulligan', 'Starthand neu mischen erlauben') + chk('overwriteHolder', 'Platzhalter darf belegt werden') +
       opt('compensation', 'Ausgleich zweiter Spieler', [['none', 'Keiner'], ['card', '+1 Karte'], ['energy', '+1 Energie in Runde 1']]) +
       chk('allowIncomplete', 'Unvollständige Decks erlauben') +
+      chk('damageStays', 'Schaden bleibt bis Rundenende') + chk('weathering', 'Verwitterung: −1 Verteidigung je Jahr seit dem Ausspielen') +
       '<div class="group-title">Ansicht und Spieler</div>' +
       opt('aiSpeed', 'Tempo der Animationen', [['slow', 'Langsam'], ['normal', 'Normal'], ['fast', 'Schnell']]) +
       opt('cardBack', 'Kartenrückseite', [['jahreskreis', 'Jahreskreis'], ['more', 'Weitere Designs folgen', true]]) +
@@ -247,7 +248,7 @@
       '<p><b>Ziel:</b> Bring die Lebenskraft deines Gegners auf 0.</p>' +
       '<p><b>Runden:</b> Jede Runde ist eine Jahreszeit (Frühling, Sommer, Herbst, Winter). Beide Spieler sind einmal am Zug. Die Energie wächst jede Runde um 1, bis 8.</p>' +
       '<p><b>Kosten:</b> In ihrer Heimat-Jahreszeit kostet eine Karte 1 weniger, in der gegenüberliegenden 1 mehr.</p>' +
-      '<p><b>Kampf:</b> Werte sind fest. Ist der Angriff mindestens so hoch wie die Verteidigung, wird das Ziel zerstört. Der Verteidiger schlägt zurück, zerstört aber nie: Sein Überschuss geht von deiner Lebenskraft ab. Steht dir gegenüber eine Karte, musst du sie angreifen. Sonst zuerst Wächter. Den Spieler direkt angreifen geht nur, wenn er keine angreifbaren Einheiten hat. Neue Einheiten greifen erst im nächsten Zug an.</p>' +
+      '<p><b>Kampf:</b> Ist der Angriff mindestens so hoch wie die (verbleibende) Verteidigung, wird das Ziel zerstört. Hält es stand, bleibt der Schaden bis zum Rundenende liegen, mehrere Angriffe addieren sich also. Ein Jahr (4 Runden) nach dem Ausspielen verwittert jede Einheit: −1 Verteidigung, und so weiter jedes Jahr. Der Verteidiger schlägt zurück, zerstört aber nie: Sein Überschuss geht von deiner Lebenskraft ab. Steht dir gegenüber eine Karte, musst du sie angreifen. Sonst zuerst Wächter. Den Spieler direkt angreifen geht nur, wenn er keine angreifbaren Einheiten hat. Neue Einheiten greifen erst im nächsten Zug an.</p>' +
       '<p><b>Frühling:</b> Eine Karte darf verschoben werden. Im Frühling gespielte Karten erhalten ab dem Sommer +1 Verteidigung.</p>' +
       '<p><b>Sommer:</b> Im Sommer gespielte Einheiten haben Eile. Der mittlere Platz ist der Sonnenplatz (+2 Angriff).</p>' +
       '<p><b>Herbst:</b> Du ziehst eine Karte mehr. Im Herbst zerstörte Einheiten werden Platzhalter und kehren im Frühling mit halben Werten und ohne Fähigkeiten zurück.</p>' +
@@ -396,7 +397,7 @@
     if (prob) { updateWarn(); confirmBox('Deck nicht spielbereit', prob, [{ label: 'OK', value: 1, cls: 'primary' }]); return; }
     const ai = aiDeckCards();
     const cfg = { life: S.life, deckSize: S.deckSize, startHand: S.startHand, handLimit: S.handLimit, fieldMode: S.fieldMode, growAt: S.growAt,
-      startSeason: S.startSeason, overwriteHolder: S.overwriteHolder, compensation: S.compensation };
+      startSeason: S.startSeason, overwriteHolder: S.overwriteHolder, compensation: S.compensation, damageStays: S.damageStays, weathering: S.weathering };
     const first = S.first === 'me' ? 0 : S.first === 'ai' ? 1 : undefined;
     const state = E.newGame(cfg, [deck.cards, ai.cards], { first: first, names: ['Du', 'Computer'] });
     G = { state: state, sel: null, pending: null, busy: false, seen: 0, aiDeck: ai.key, toast: '', played: [[], []], startedAt: Date.now(), deckName: deck.name, deckCards: deck.cards.slice(), recorded: false };
@@ -445,6 +446,8 @@
     if (u.freezeTurn && u.freezeTurn >= st.T) flags.push('Eingefroren');
     if (E.isGuard(st, u, s) && d.kw.indexOf('guard') < 0) flags.push('Wächter');
     if (u.noAbil) flags.push(u.halfStats ? 'Rückkehrer ½' : 'Rückkehrer');
+    if (u.dmg && u.dmgRound === st.round) flags.push('Schaden ' + u.dmg);
+    if (u.weather) flags.push('Verwittert −' + u.weather);
     return { atk: v.atk, def: v.def, atkMode: v.atk > bAtk ? 'up' : v.atk < bAtk ? 'down' : '', defMode: v.def > bDef ? 'up' : v.def < bDef ? 'down' : '',
       noAbil: u.noAbil, iced: E.isIced(st, u, s), flags: flags, cost: d.cost };
   }
@@ -725,7 +728,7 @@
       my_cards_played: G.played[0], ai_cards_played: G.played[1],
       duration_seconds: Math.round((Date.now() - G.startedAt) / 1000),
       settings: { life: S.life, deckSize: S.deckSize, startHand: S.startHand, handLimit: S.handLimit, copies: S.copies, fieldMode: S.fieldMode, growAt: S.growAt,
-        startSeason: S.startSeason, mulligan: S.mulligan, overwriteHolder: S.overwriteHolder, compensation: S.compensation, allowIncomplete: S.allowIncomplete },
+        startSeason: S.startSeason, mulligan: S.mulligan, overwriteHolder: S.overwriteHolder, compensation: S.compensation, allowIncomplete: S.allowIncomplete, damageStays: S.damageStays, weathering: S.weathering },
       version: 'proto-1'
     };
     STORE.saveGame(row).catch(function (e) { console.warn('Statistik wird später gespeichert', e); });

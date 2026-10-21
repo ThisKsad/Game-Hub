@@ -12,7 +12,7 @@
   const DEFAULT_CFG = {
     life: 20, deckSize: 20, startHand: 4, handLimit: 8, maxEnergy: 8,
     fieldMode: 'grow', growAt: 'spring2', startSeason: 'spring',
-    overwriteHolder: true, compensation: 'none'
+    overwriteHolder: true, compensation: 'none', damageStays: true, weathering: true
   };
 
   /* ---------- Zufall (mit Startwert, damit Simulationen reproduzierbar sind) ---------- */
@@ -87,6 +87,8 @@
       if (b.def !== d.def) mods.push({ stat: 'def', v: b.def - d.def, why: 'Vergänglichkeit (halbe Werte)' });
     }
     if (inst.tmpDef && inst.tmpRound === state.round) { df += inst.tmpDef; mods.push({ stat: 'def', v: inst.tmpDef, why: 'Glutdrache' }); }
+    if (inst.weather) { df -= inst.weather; mods.push({ stat: 'def', v: -inst.weather, why: 'Verwitterung' }); }
+    if (inst.dmg && inst.dmgRound === state.round) { df -= inst.dmg; mods.push({ stat: 'def', v: -inst.dmg, why: 'Schaden in dieser Runde' }); }
     if (!immune(state, inst)) {
       const sun = sunBonus(state, s);
       if (sun) { atk += sun; mods.push({ stat: 'atk', v: sun, why: 'Sonnenplatz' }); }
@@ -235,7 +237,11 @@
     log(state, 'Runde ' + state.round + ': ' + SN[nx] + (changed ? '' : ' (verlängert)') + '.', 'round');
 
     eachUnit(state, function (u, p, s) {
-      delete u.tmpDef; delete u.tmpRound;
+      delete u.tmpDef; delete u.tmpRound; delete u.dmg; delete u.dmgRound;
+      if (state.cfg.weathering && u.playedRound != null) {
+        const age = state.round - u.playedRound;
+        if (age > 0 && age % 4 === 0) { u.weather = (u.weather || 0) + 1; log(state, def(u).name + ' verwittert: −1 Verteidigung.', 'info'); }
+      }
       if (u.bloom && nx !== 'spring') { u.pDef = (u.pDef || 0) + 1; delete u.bloom; }
       if (changed && has(state, u, s, 'growth') && (u.growth || 0) < 4) u.growth = (u.growth || 0) + 1;
     });
@@ -254,7 +260,7 @@
           const sl = f[s];
           if (sl && sl.holder) {
             const u = resetInst(sl.holder);
-            u.noReturn = true; u.playedTurn = -1;
+            u.noReturn = true; u.playedTurn = -1; u.playedRound = state.round;
             if (!sl.full) { u.noAbil = true; if (!leaves) u.halfStats = true; }
             if (!immune(state, u)) u.bloom = true;
             f[s] = { u: u };
@@ -374,8 +380,12 @@
     const tName = def(t.inst).name;
     const killed = sa.atk >= st.def;
     const over = st.atk - sa.def;
-    log(state, def(u).name + ' (' + sa.atk + ') greift ' + tName + ' (' + st.def + ' Vert.) an' + (killed ? '.' : ' – hält stand.'), 'attack');
+    log(state, def(u).name + ' (' + sa.atk + ') greift ' + tName + ' (' + st.def + ' Vert.) an' + (killed ? '.' : ' – hält stand' + (state.cfg.damageStays && sa.atk > 0 ? ' und nimmt ' + sa.atk + ' Schaden bis Rundenende' : '') + '.'), 'attack');
     if (killed) destroy(state, e, t.s);
+    else if (state.cfg.damageStays && sa.atk > 0) {
+      if (t.inst.dmgRound !== state.round) { t.inst.dmg = 0; t.inst.dmgRound = state.round; }
+      t.inst.dmg += sa.atk;
+    }
     if (over > 0 && !has(state, u, a.s, 'tough')) {
       state.players[p].life -= over;
       log(state, 'Gegenschlag: ' + state.players[p].name + ' verliert ' + over + ' Lebenskraft.', 'damage');
@@ -500,7 +510,7 @@
     const old = pl.field[s];
     if (old && old.holder) { pl.discard.push(old.holder.id); log(state, 'Der Platzhalter von ' + BY_ID[old.holder.id].name + ' wird überbaut.', 'info'); }
     const u = resetInst(c);
-    u.playedTurn = state.T;
+    u.playedTurn = state.T; u.playedRound = state.round;
     if (!immune(state, u)) {
       if (state.season === 'spring') u.bloom = true;
       if (state.season === 'summer') u.haste = true;
