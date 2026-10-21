@@ -168,8 +168,9 @@
     const diff = [['easy', 'Leicht'], ['medium', 'Mittel'], ['hard', 'Schwer']].map(function (x) {
       return '<button class="seg' + (S.difficulty === x[0] ? ' on' : '') + '" data-diff="' + x[0] + '" aria-pressed="' + (S.difficulty === x[0]) + '">' + x[1] + '</button>';
     }).join('');
-    root.innerHTML = '<div class="menubg" aria-hidden="true"><div class="bgstrip">' + strip + '</div><div class="menushade"></div></div>' +
-      '<div class="page menupage">' +
+    /* Der laufende Hintergrund wird nur einmal angelegt, damit er beim Neuzeichnen nicht springt */
+    if (!root.querySelector('.menubg')) root.innerHTML = '<div class="menubg" aria-hidden="true"><div class="bgstrip">' + strip + '</div><div class="menushade"></div></div><div id="menuContent"></div>';
+    root.querySelector('#menuContent').innerHTML = '<div class="page menupage">' +
       '<div class="topbar"><a class="iconbtn glass" href="../" aria-label="Zurück zum Game Hub">' + ICON.door + '</a></div>' +
       '<div class="title"><div class="wheel">' + ICON.wheel + '</div><h1>' + GAME_NAME + '</h1><p>Das Duell der Jahreszeiten · Testphase</p></div>' +
       (OFFLINE ? '<div class="banner">Der Server ist gerade nicht erreichbar. Du kannst mit den Startdecks spielen, Änderungen an Decks werden aber nicht gespeichert.</div>' : '') +
