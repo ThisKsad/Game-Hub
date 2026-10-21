@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2E2C29">
+<title>Tempora</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+<style>
+:root{
+  --ink:#2A2926; --paper:#F3F1EC; --muted:#CFCBC3; --panel:#3A3834; --line:#55524C; --bg:#2E2C29;
+  --spring:#4E7A3C; --summer:#9A6A0E; --autumn:#A34A22; --winter:#3E6A92;
+  --display:"Alegreya SC", Georgia, serif; --body:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0; height:100%}
+body{background:var(--bg); color:var(--paper); font-family:var(--body); font-size:16px; line-height:1.4}
+button{font:inherit; cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #F2C94C; outline-offset:2px}
+.btn{min-height:44px; padding:0 18px; border-radius:22px; border:1.5px solid var(--muted); background:transparent; color:var(--paper); font-weight:700}
+.btn:hover{background:rgba(255,255,255,.08)}
+.btn.primary{background:var(--paper); color:var(--ink); border-color:var(--paper)}
+.btn.primary:hover{background:#fff}
+.btn.danger{border-color:#E07A6E; color:#F2B6AE}
+.btn.small{min-height:36px; padding:0 12px; font-size:14px}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+h1,h2,h3{font-family:var(--display); margin:0}
+
+/* ---------- Seiten (Menü, Decks) ---------- */
+.page{max-width:980px; margin:0 auto; padding:max(20px, env(safe-area-inset-top)) 16px 40px}
+.topbar{display:flex; align-items:center; gap:12px; margin-bottom:20px}
+.topbar h1{font-size:34px; letter-spacing:.06em}
+.iconbtn{display:inline-grid; place-items:center; width:44px; height:44px; flex:none; border-radius:10px; border:1.5px solid var(--line); color:var(--paper); background:transparent; text-decoration:none}
+.iconbtn:hover{background:rgba(255,255,255,.08)}
+.hero{display:flex; gap:20px; align-items:center; margin:10px 0 24px}
+.hero p{margin:4px 0 0; color:var(--muted)}
+.menu-actions{display:flex; flex-wrap:wrap; gap:12px; margin-bottom:24px}
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px}
+details.panel>summary{cursor:pointer; font-weight:700; font-size:18px; list-style:none; display:flex; align-items:center; justify-content:space-between}
+details.panel>summary::after{content:"▾"; color:var(--muted)}
+details[open].panel>summary::after{content:"▴"}
+.opts{display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:14px 22px; margin-top:16px}
+.opt label, .opt .lbl{display:block; font-size:13px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:5px}
+.opt select,.opt input[type=number],.field-input{width:100%; min-height:42px; border-radius:10px; border:1px solid var(--line); background:#2A2926; color:var(--paper); padding:0 10px; font:inherit}
+.opt .check{display:flex; align-items:center; gap:10px; min-height:42px; font-size:16px; text-transform:none; letter-spacing:0; color:var(--paper); font-weight:500}
+.opt .check input{width:20px; height:20px; accent-color:#F2C94C}
+.group-title{grid-column:1/-1; font-family:var(--display); font-size:18px; margin-top:8px; padding-top:10px; border-top:1px solid var(--line)}
+.group-title:first-child{border-top:none; padding-top:0; margin-top:0}
+.note{color:var(--muted); font-size:14px}
+.banner{background:#5A3A22; border:1px solid #A8501E; border-radius:12px; padding:10px 14px; margin-bottom:16px}
+
+/* ---------- Passwort ---------- */
+.gate{min-height:100%; display:grid; place-items:center; padding:24px}
+.gate form{width:min(380px, 100%); display:flex; flex-direction:column; gap:14px; text-align:center}
+.gate .err{color:#F2B6AE; min-height:1.4em}
+
+/* ---------- Karte ---------- */
+.card{width:140px; height:204px; border-radius:12px; border:2.5px solid var(--sb); background:#EFEDE8; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 6px 14px rgba(0,0,0,.35); color:var(--ink); font-family:var(--body); position:relative; text-align:left; user-select:none}
+.card.spell{background-color:#F4EBD6; background-image:repeating-linear-gradient(45deg, rgba(120,90,40,.07) 0 2px, transparent 2px 7px)}
+.card.field{box-shadow:inset 0 0 0 3px #EFEDE8, inset 0 0 0 4.5px var(--sb), 0 6px 14px rgba(0,0,0,.35)}
+.card .hd{display:flex; align-items:center; gap:7px; padding:7px 8px 5px}
+.card .nm{font-family:var(--display); font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.cost{flex:none; display:flex}
+.cost i{display:flex; align-items:center; justify-content:center; width:26px; height:26px; color:#fff; font-style:normal; font-weight:700; font-size:15px; background:#3F3D39}
+.shape-unit,.shape-unit i{border-radius:50%}
+.shape-spell,.shape-spell i{border-radius:7px}
+.shape-field,.shape-field i{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.shape-field i{width:30px}
+.cost.cheaper{background:#3F3D39; padding:1.5px}
+.cost.cheaper>span{background:#fff; padding:2.5px; display:flex}
+.cost.pricier{background:#12110F; padding:3px}
+.card .art{align-self:center; height:84px; padding:1.5px; flex:none; background:var(--sab)}
+.card .art>div{width:100%; height:100%; overflow:hidden; display:flex; justify-content:center; align-items:center; background:var(--sbg)}
+.card .art svg{width:122px; height:82px; flex:none}
+.card.unit .art{width:84px}
+.card.unit .art,.card.unit .art>div{border-radius:50%}
+.card.spell .art{width:124px}
+.card.spell .art,.card.spell .art>div{border-radius:10px}
+.card.field .art{width:124px}
+.card.field .art,.card.field .art>div{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.card .tl{padding:5px 9px 0; font-size:9.5px; font-weight:500; letter-spacing:.6px; text-transform:uppercase; color:#55524C}
+.card .tx{flex:1; margin:3px 8px 0; padding:3px 4px; border-top:1px solid #C2BDB4; font-size:10px; line-height:1.25; overflow:hidden}
+.card .tx em{font-style:italic; color:#5A564F}
+.card .ft{display:flex; justify-content:space-between; align-items:center; padding:0 6px 6px}
+.badge{display:flex; align-items:center; gap:2px; height:26px; padding:0 7px 0 5px; border-radius:13px; font-weight:700; font-size:15px; border:1.5px solid #3F3D39}
+.badge svg{width:13px; height:13px}
+.badge.atk{background:#3F3D39; color:#fff}
+.badge.def{background:#F7F5F1; color:var(--ink)}
+.badge.up{background:#F6E3B8; color:#4A3306; border:2px solid #9A6A0E}
+.badge.down{background:#D5E3F0; color:#172F45; border:2px solid #3E6A92}
+.badge small{font-size:9px}
+.card .flag{position:absolute; top:40px; right:4px; display:flex; flex-direction:column; gap:3px; align-items:flex-end}
+.card .flag span{font-size:9px; font-weight:700; padding:1px 5px; border-radius:6px; background:#2A2926; color:#fff}
+.card.iced::after{content:""; position:absolute; inset:0; background:linear-gradient(135deg, rgba(213,227,240,.55), rgba(162,188,214,.35)); pointer-events:none}
+.back{width:140px; height:204px; border-radius:12px; background:#2A2926; border:2.5px solid #CFCBC3; position:relative; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 14px rgba(0,0,0,.35)}
+.back::before{content:""; position:absolute; inset:7px; border-radius:8px; border:1.5px solid rgba(207,203,195,.45)}
+
+/* ---------- Spielfeld ---------- */
+#game{position:fixed; inset:0; background:#151413; overflow:hidden}
+#stage{position:absolute; left:0; top:0; width:1280px; height:720px; transform-origin:0 0; overflow:hidden}
+.decor{position:absolute; left:0; top:0; pointer-events:none}
+.watermark{position:absolute; left:0; right:0; top:250px; text-align:center; font-family:var(--display); font-size:170px; letter-spacing:12px; color:#fff; opacity:.08; pointer-events:none}
+.layer{position:absolute; inset:0; padding:10px 16px 0; display:flex; flex-direction:column; gap:8px}
+.opp-hand{height:56px; display:flex; justify-content:center; align-items:center; gap:6px; font-size:14px}
+.mini{overflow:hidden; flex:none}
+.mini>div{transform-origin:0 0}
+.row{display:flex; align-items:center; gap:16px}
+.stats{width:150px; flex:none; padding:10px 12px; border-radius:12px; background:rgba(20,19,17,.6); display:flex; flex-direction:column; gap:4px; border:2px solid transparent; text-align:left; color:var(--paper)}
+.stats .who{font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--muted)}
+.stats .life{display:flex; align-items:center; gap:8px; font-size:26px; font-weight:700}
+.stats .en{display:flex; align-items:center; gap:8px; font-size:16px; font-weight:500}
+.stats.turn{border-color:#F2C94C}
+.slots{flex:1; display:flex; justify-content:center; gap:12px}
+.slot{width:98px; height:143px; position:relative; border-radius:10px; flex:none; padding:0; border:none; background:none; color:inherit}
+.slot.empty{border:2px dashed rgba(255,255,255,.35)}
+.slot.frozen{border:2px dashed rgba(213,227,240,.7); background:rgba(213,227,240,.15)}
+.slot.inactive{visibility:hidden}
+.slot .sc{transform:scale(.7); transform-origin:0 0; position:absolute; left:0; top:0}
+.slot.sun::before{content:""; position:absolute; inset:-6px; border-radius:14px; background:radial-gradient(circle, rgba(242,201,76,.45), rgba(242,201,76,0) 70%); pointer-events:none}
+.slot .tag{position:absolute; left:50%; bottom:-17px; transform:translateX(-50%); font-size:11px; font-weight:700; white-space:nowrap; color:#F6E3B8}
+.holder{width:98px; height:143px; border-radius:10px; border:2px dashed #F2D3C2; background:rgba(242,211,194,.15); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:8px; text-align:center}
+.holder b{font-size:12px} .holder span{font-size:11px; color:#F2D3C2}
+.piles{width:150px; flex:none; display:flex; gap:12px; justify-content:flex-end}
+.pile{display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px; color:#E9E6E0; background:none; border:none; padding:0}
+.pile .stack{width:50px; height:73px; border-radius:6px; box-shadow:3px 3px 0 #1A1917, 6px 6px 0 #11100F}
+.pile .emptypile{width:50px; height:73px; border-radius:6px; border:1.5px dashed rgba(255,255,255,.35)}
+.strip{height:96px; display:flex; align-items:center; justify-content:space-between; padding:0 166px; margin:0 -16px; background:rgba(20,19,17,.38); border-top:1px solid rgba(255,255,255,.18); border-bottom:1px solid rgba(255,255,255,.18)}
+.fz{display:flex; align-items:center; gap:10px; font-size:12px; color:var(--muted); background:none; border:none; color:var(--muted); padding:0}
+.fz .slotfz{width:63px; height:92px; border-radius:8px; position:relative}
+.fz .slotfz.emptyfz{border:2px dashed rgba(255,255,255,.3); clip-path:none}
+.band{display:flex; flex-direction:column; align-items:center; gap:6px}
+.chips{display:flex; align-items:center; gap:6px}
+.chip{display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px; color:#fff; width:82px; height:40px; font-size:14px; font-weight:700; border:1.5px solid rgba(255,255,255,.45)}
+.chip small{font-weight:500; font-size:10px; opacity:.9}
+.chip.now{width:120px; height:52px; font-family:var(--display); font-size:22px; border:2.5px solid #fff; box-shadow:0 0 12px rgba(255,255,255,.35)}
+.chip.now small{font-family:var(--body); font-size:11px}
+.chip.past{opacity:.55}
+.chip.far.past{opacity:.38}
+.chip.far.future{opacity:.75}
+.bandinfo{font-size:13px; color:#E9E6E0; text-align:center; max-width:520px}
+.handrow{flex:1; display:flex; align-items:flex-start; justify-content:center; gap:12px; padding-top:6px; position:relative}
+.hc{width:112px; height:163px; position:relative; flex:none; padding:0; border:none; background:none; transition:transform .12s ease}
+.hc .sc{transform:scale(.8); transform-origin:0 0; position:absolute; left:0; top:0}
+.hc:hover{transform:translateY(-8px)}
+.hc.unaff{filter:saturate(.45) brightness(.8)}
+.sel{outline:3px solid #F2C94C; outline-offset:3px; border-radius:12px}
+.tgt{box-shadow:0 0 0 3px #7FD6F2, 0 0 18px rgba(127,214,242,.8); border-radius:12px; cursor:pointer}
+.stats.tgt{box-shadow:0 0 0 3px #F2B6AE, 0 0 18px rgba(242,182,174,.9)}
+.can{box-shadow:0 0 0 2px rgba(242,201,76,.75); border-radius:12px}
+.side-actions{position:absolute; right:0; top:0; width:200px; display:flex; flex-direction:column; gap:10px; align-items:stretch}
+.hint{position:absolute; left:0; top:8px; width:190px; font-size:14px; color:#E9E6E0; background:rgba(20,19,17,.6); border-radius:12px; padding:10px 12px}
+.topbtns{position:absolute; left:12px; top:10px; display:flex; gap:8px; z-index:3}
+.topbtns .iconbtn{width:40px; height:40px; background:rgba(20,19,17,.55)}
+.toast{position:absolute; left:50%; top:66px; transform:translateX(-50%); background:rgba(20,19,17,.85); border:1px solid rgba(255,255,255,.25); padding:8px 16px; border-radius:20px; font-size:15px; max-width:760px; text-align:center; z-index:4; pointer-events:none; transition:opacity .25s}
+.rotate{position:absolute; inset:0; display:none; place-items:center; text-align:center; padding:30px; background:var(--bg); z-index:20}
+@media (orientation:portrait) and (max-width:820px){ .rotate{display:grid} }
+
+/* ---------- Dialoge ---------- */
+.modal{position:fixed; inset:0; background:rgba(10,9,8,.72); display:grid; place-items:center; padding:16px; z-index:30}
+.modal .box{background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:20px; width:min(760px, 100%); max-height:calc(100vh - 32px); overflow:auto}
+.modal .box h2{font-size:26px; margin-bottom:10px}
+.detail{display:flex; gap:24px; flex-wrap:wrap}
+.detail .big{width:294px; height:428px; flex:none}
+.detail .big>div{transform:scale(2.1); transform-origin:0 0}
+.detail dl{display:grid; grid-template-columns:120px 1fr; gap:8px 12px; margin:0; font-size:16px; flex:1; min-width:240px; align-content:start}
+.detail dt{color:var(--muted)}
+.detail dd{margin:0; font-weight:500}
+.costrow{display:flex; gap:6px; flex-wrap:wrap}
+.costrow span{border-radius:8px; padding:4px 8px; font-weight:700; font-size:14px}
+.costrow span.cur{outline:2px solid #fff}
+.modal-actions{display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top:16px}
+.loglist{font-size:15px; display:flex; flex-direction:column; gap:4px}
+.loglist .round{font-weight:700; color:#F6E3B8; margin-top:6px}
+.loglist .damage{color:#F2B6AE}
+.mull{display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:10px 0}
+.mull .hc{cursor:pointer}
+.mull .hc.off{opacity:.4}
+
+/* ---------- Decks ---------- */
+.decklist{display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:14px}
+.deck{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:10px}
+.deck h3{font-size:19px}
+.deck .meta{font-size:14px; color:var(--muted)}
+.dist{display:flex; height:10px; border-radius:5px; overflow:hidden; background:#2A2926}
+.dist span{display:block; height:100%}
+.deck .acts{display:flex; flex-wrap:wrap; gap:8px}
+.editor{display:grid; grid-template-columns:1fr 320px; gap:16px; align-items:start}
+@media (max-width:820px){ .editor{grid-template-columns:1fr} }
+.filters{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px}
+.fchip{min-height:36px; padding:0 12px; border-radius:18px; border:1.5px solid var(--line); background:transparent; color:var(--paper); font-weight:700; font-size:14px}
+.fchip.on{background:var(--paper); color:var(--ink); border-color:var(--paper)}
+.pool{display:grid; grid-template-columns:repeat(auto-fill, minmax(98px, 1fr)); gap:12px}
+.pc{position:relative; width:98px; height:143px; padding:0; border:none; background:none}
+.pc .sc{transform:scale(.7); transform-origin:0 0; position:absolute; left:0; top:0}
+.pc .cnt{position:absolute; right:-6px; top:-6px; min-width:26px; height:26px; border-radius:13px; background:#F2C94C; color:var(--ink); font-weight:700; display:grid; place-items:center; z-index:2; padding:0 6px}
+.pc.maxed{opacity:.5}
+.decklist-side{position:sticky; top:12px}
+.dl{display:flex; flex-direction:column; gap:4px; max-height:46vh; overflow:auto; margin:10px 0}
+.dl button{display:flex; align-items:center; gap:8px; min-height:36px; border-radius:8px; border:1px solid var(--line); background:#2A2926; color:var(--paper); padding:0 10px; text-align:left}
+.dl .c{width:24px; height:24px; border-radius:50%; display:grid; place-items:center; font-weight:700; font-size:13px; color:#fff; flex:none}
+.dl .x{margin-left:auto; color:var(--muted)}
+.curve{display:flex; align-items:flex-end; gap:4px; height:70px; margin-top:6px}
+.curve div{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; font-size:11px; color:var(--muted)}
+.curve i{display:block; width:100%; background:#CFCBC3; border-radius:3px 3px 0 0}
+.warn{color:#F2B6AE; font-size:14px}
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate" hidden>
+  <form id="gateForm" autocomplete="off">
+    <svg width="72" height="72" viewBox="0 0 22 22" style="margin:0 auto" aria-hidden="true"><path d="M11 11 L11 1.5 A9.5 9.5 0 0 1 20.5 11 Z" fill="#9A6A0E"/><path d="M11 11 L20.5 11 A9.5 9.5 0 0 1 11 20.5 Z" fill="#A34A22"/><path d="M11 11 L11 20.5 A9.5 9.5 0 0 1 1.5 11 Z" fill="#3E6A92"/><path d="M11 11 L1.5 11 A9.5 9.5 0 0 1 11 1.5 Z" fill="#4E7A3C"/><circle cx="11" cy="11" r="2.2" fill="#2E2C29"/></svg>
+    <h1 style="font-size:36px">Tempora</h1>
+    <p class="note">Das Spiel ist in der Testphase. Bitte gib das Passwort ein.</p>
+    <label for="gatePw" class="note" style="text-align:left">Passwort</label>
+    <input id="gatePw" class="field-input" type="password" autocomplete="current-password">
+    <div class="err" id="gateErr" role="alert"></div>
+    <button class="btn primary" type="submit">Weiter</button>
+    <a class="note" href="../">Zurück zum Game Hub</a>
+  </form>
+</div>
+
+<div id="menu" hidden></div>
+<div id="decks" hidden></div>
+<div id="game" hidden>
+  <div id="stage"></div>
+  <div class="rotate"><div><h2>Bitte drehe dein Gerät</h2><p class="note">Tempora wird vorerst im Querformat gespielt. Eine Hochkant-Ansicht folgt später.</p></div></div>
+</div>
+<div id="modal" class="modal" hidden></div>
+
+<script src="cards.js"></script>
+<script src="art.js"></script>
+<script src="engine.js"></script>
+<script src="ai.js"></script>
+<script src="decor.js"></script>
+<script src="store.js"></script>
+<script src="ui.js"></script>
+</body>
+</html>

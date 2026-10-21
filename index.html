@@ -89,11 +89,11 @@ footer{margin-top:40px; color:var(--muted); font-size:14px; text-align:center}
 
   <h2 data-t="planned"></h2>
   <div class="grid">
-    <div class="tile soon">
-      <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="8" width="20" height="30" rx="3" fill="none" stroke="#d6ac55" stroke-width="2.5" transform="rotate(-10 19 23)"/><rect x="19" y="10" width="20" height="30" rx="3" fill="#173a2c" stroke="#d6ac55" stroke-width="2.5" transform="rotate(8 29 25)"/><path d="M29 20l1.8 3.7 4 .6-2.9 2.8.7 4-3.6-1.9-3.6 1.9.7-4-2.9-2.8 4-.6z" fill="#d6ac55" transform="rotate(8 29 25)"/></svg>
-      <div><h3 data-t="ownCards"></h3><p data-t="ownCardsDesc"></p></div>
-      <span class="badge" data-t="soon"></span>
-    </div>
+    <a class="tile soon" href="tempora/">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="19" fill="none" stroke="#d6ac55" stroke-width="2"/><path d="M24 24V7a17 17 0 0 1 17 17z" fill="#9A6A0E"/><path d="M24 24h17a17 17 0 0 1-17 17z" fill="#A34A22"/><path d="M24 24v17A17 17 0 0 1 7 24z" fill="#3E6A92"/><path d="M24 24H7A17 17 0 0 1 24 7z" fill="#4E7A3C"/><circle cx="24" cy="24" r="4" fill="#173a2c" stroke="#d6ac55" stroke-width="1.5"/></svg>
+      <div><h3 data-t="tempora"></h3><p data-t="temporaDesc"></p></div>
+      <span class="badge" data-t="testing"></span>
+    </a>
     <div class="tile soon">
       <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="30" width="36" height="6" rx="1.5" fill="#d6ac55"/><rect x="26" y="20" width="10" height="5" rx="1.5" fill="none" stroke="#d6ac55" stroke-width="2.5"/><rect x="11" y="18" width="8" height="12" rx="2" fill="none" stroke="#d6ac55" stroke-width="2.5"/><circle cx="31" cy="12" r="2.5" fill="#d6ac55"/></svg>
       <div><h3 data-t="game2d"></h3><p data-t="game2dDesc"></p></div>
@@ -115,7 +115,7 @@ const I18N={
     scopaDesc:'Das italienische Kartenspiel – Karten von der Mitte holen, Scopa machen, Punkte sammeln.',
     tagPlayers:'2–4 Spieler', tagLocal:'Ein Gerät', tagOnline:'Online per Raum-Code', tagModes:'4 Regelmodi',
     planned:'In Arbeit', soon:'Bald',
-    ownCards:'Eigenes Kartenspiel', ownCardsDesc:'Eigene Regeln, eigene Karten.',
+    tempora:'Tempora', temporaDesc:'Unser eigenes Duell-Kartenspiel: Vier Jahreszeiten verändern Kosten, Feld und Kampf.', testing:'Testphase',
     game2d:'2D-Spiel', game2dDesc:'Der nächste Schritt: Bewegung, Level, Action.',
     game3d:'3D-Spiel', game3dDesc:'Das große Ziel.',
     footer:'Läuft direkt im Browser – auf dem Handy auch zum Startbildschirm hinzufügen.'},
@@ -123,7 +123,7 @@ const I18N={
     scopaDesc:'The Italian card game – capture cards from the table, make a scopa, rack up points.',
     tagPlayers:'2–4 players', tagLocal:'One device', tagOnline:'Online via room code', tagModes:'4 rule modes',
     planned:'In the works', soon:'Soon',
-    ownCards:'Our own card game', ownCardsDesc:'Our own rules, our own cards.',
+    tempora:'Tempora', temporaDesc:'Our own duel card game: four seasons change costs, field and combat.', testing:'Testing',
     game2d:'2D game', game2dDesc:'The next step: movement, levels, action.',
     game3d:'3D game', game3dDesc:'The big goal.',
     footer:'Runs right in the browser – on your phone you can add it to the home screen.'},
@@ -131,7 +131,7 @@ const I18N={
     scopaDesc:'O jogo de cartas italiano – pegue cartas da mesa, faça scopa, some pontos.',
     tagPlayers:'2–4 jogadores', tagLocal:'Um aparelho', tagOnline:'Online por código de sala', tagModes:'4 modos de regras',
     planned:'Em produção', soon:'Em breve',
-    ownCards:'Nosso próprio jogo de cartas', ownCardsDesc:'Regras próprias, cartas próprias.',
+    tempora:'Tempora', temporaDesc:'Nosso próprio jogo de cartas de duelo: quatro estações mudam custos, campo e combate.', testing:'Em teste',
     game2d:'Jogo 2D', game2dDesc:'O próximo passo: movimento, fases, ação.',
     game3d:'Jogo 3D', game3dDesc:'O grande objetivo.',
     footer:'Roda direto no navegador – no celular dá para adicionar à tela inicial.'}
