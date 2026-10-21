@@ -359,14 +359,14 @@
   }
 
   /* ---------- Angriff ---------- */
-  function canAttack(state, u, p, s) {
+  function canAttack(state, u, p, s, ignoreUses) {
     if (p !== state.current || state.winner !== null) return false;
     if (isIced(state, u, s) || hibernating(state, u, s)) return false;
     if (u.freezeTurn === state.T) return false;
     const st = stats(state, u, s);
     if (st.atk < 1) return false;
     const limit = u.doubleTurn === state.T ? 2 : 1;
-    if ((u.attackTurn === state.T ? u.attacks : 0) >= limit) return false;
+    if (!ignoreUses && (u.attackTurn === state.T ? u.attacks : 0) >= limit) return false;
     const fresh = u.playedTurn === state.T;
     if (fresh && !u.haste && !has(state, u, s, 'haste')) return false;
     return true;
@@ -443,7 +443,8 @@
         if (sl.u && sl.u.noAbil) out.push(sl.u.uid);
       });
     } else if (d.target === 'ownUnit') {
-      state.players[p].field.forEach(function (sl, s) { if (sl && sl.u && canAttack(state, sl.u, p, s)) out.push(sl.u.uid); });
+      /* Lauffeuer: auch Einheiten, die in diesem Zug schon angegriffen haben, dürfen ein zweites Mal */
+      state.players[p].field.forEach(function (sl, s) { if (sl && sl.u && sl.u.doubleTurn !== state.T && canAttack(state, sl.u, p, s, true)) out.push(sl.u.uid); });
     } else if (d.target === 'enemyUnit' || d.target === 'enemyUnitMax3') {
       state.players[e].field.forEach(function (sl) {
         if (sl && sl.u && !(d.target === 'enemyUnitMax3' && def(sl.u).cost > 3) && !(d.id === 'ewigeseis' && sl.u.entombed)) out.push(sl.u.uid);
