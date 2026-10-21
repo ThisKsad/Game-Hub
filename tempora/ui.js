@@ -396,14 +396,14 @@
   function unitView(st, u, s) {
     const d = BY_ID[u.id];
     const v = E.stats(st, u, s);
-    const bAtk = u.halfStats ? Math.ceil(d.atk / 2) : d.atk, bDef = u.halfStats ? Math.ceil(d.def / 2) : d.def;
+    const bAtk = d.atk, bDef = d.def; // Vergleich mit den aufgedruckten Werten, damit halbierte Rückkehrer sichtbar sind
     const flags = [];
     if (u.entombed) flags.push('Im Eis');
     else if (E.isIced(st, u, s)) flags.push('Eis');
     if (E.hibernating(st, u, s)) flags.push('Winterschlaf');
     if (u.freezeTurn && u.freezeTurn >= st.T) flags.push('Eingefroren');
     if (E.isGuard(st, u, s) && d.kw.indexOf('guard') < 0) flags.push('Wächter');
-    if (u.noAbil) flags.push('Rückkehrer');
+    if (u.noAbil) flags.push(u.halfStats ? 'Rückkehrer ½' : 'Rückkehrer');
     return { atk: v.atk, def: v.def, atkMode: v.atk > bAtk ? 'up' : v.atk < bAtk ? 'down' : '', defMode: v.def > bDef ? 'up' : v.def < bDef ? 'down' : '',
       noAbil: u.noAbil, iced: E.isIced(st, u, s), flags: flags, cost: d.cost };
   }

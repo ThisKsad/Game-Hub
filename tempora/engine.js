@@ -82,6 +82,10 @@
     let atk = b.atk + (inst.pAtk || 0);
     let df = b.def + (inst.pDef || 0) + (inst.growth || 0);
     const mods = [];
+    if (inst.halfStats) {
+      if (b.atk !== d.atk) mods.push({ stat: 'atk', v: b.atk - d.atk, why: 'Vergänglichkeit (halbe Werte)' });
+      if (b.def !== d.def) mods.push({ stat: 'def', v: b.def - d.def, why: 'Vergänglichkeit (halbe Werte)' });
+    }
     if (inst.tmpDef && inst.tmpRound === state.round) { df += inst.tmpDef; mods.push({ stat: 'def', v: inst.tmpDef, why: 'Glutdrache' }); }
     if (!immune(state, inst)) {
       const sun = sunBonus(state, s);
