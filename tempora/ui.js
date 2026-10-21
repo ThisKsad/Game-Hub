@@ -42,7 +42,7 @@
     player: 'lukas', difficulty: 'medium', aiDeck: 'random', first: 'random', myDeck: null,
     startSeason: 'spring', turnMode: 'alternate', fieldMode: 'grow', growAt: 'spring2',
     life: 20, deckSize: 20, startHand: 4, handLimit: 8, copies: 1,
-    mulligan: false, overwriteHolder: true, compensation: 'none', allowIncomplete: false, cardBack: 'jahreskreis'
+    mulligan: false, aiSpeed: 'normal', overwriteHolder: true, compensation: 'none', allowIncomplete: false, cardBack: 'jahreskreis'
   };
   let S = loadSettings();
   function loadSettings() { try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}); } catch (e) { return Object.assign({}, DEFAULTS); } }
@@ -194,6 +194,7 @@
       opt('compensation', 'Ausgleich zweiter Spieler', [['none', 'Keiner'], ['card', '+1 Karte'], ['energy', '+1 Energie in Runde 1']]) +
       chk('allowIncomplete', 'Unvollständige Decks erlauben') +
       '<div class="group-title">Ansicht und Spieler</div>' +
+      opt('aiSpeed', 'Tempo der Animationen', [['slow', 'Langsam'], ['normal', 'Normal'], ['fast', 'Schnell']]) +
       opt('cardBack', 'Kartenrückseite', [['jahreskreis', 'Jahreskreis'], ['more', 'Weitere Designs folgen', true]]) +
       '<div class="opt"><label for="o-player">Spielername (für deine Decks)</label><input class="field-input" id="o-player" value="' + esc(S.player) + '" maxlength="40"></div>' +
       '</div><div style="margin-top:16px"><button class="btn small" id="mReset">Standard wiederherstellen</button></div></details>' +
@@ -404,7 +405,14 @@
     toast(state.log.map(function (l) { return l.text; }).join(' · '));
     if (S.mulligan) mulliganDialog(); else afterStart();
   }
-  function afterStart() { render(); if (G.state.current === 1) aiTurn(); else toast('Du bist am Zug.'); }
+  async function afterStart() {
+    G.busy = true; render();
+    const st = G.state;
+    await banner(SN[st.season] + ' · Runde 1', 'Die Partie beginnt', COSTBG[st.season], 1400 * speed());
+    await banner(st.current === 0 ? 'Du beginnst' : 'Der Computer beginnt', '', null, 900 * speed());
+    G.busy = false;
+    if (G.state.current === 1) aiTurn(); else render();
+  }
   function mulliganDialog() {
     const pl = G.state.players[0];
     const off = {};
@@ -507,6 +515,7 @@
         let cls = 'slot' + (sun ? ' sun' : '') + (tk[key] ? ' tgt' : '');
         let inner = '';
         if (sl && sl.u) {
+          if (G.fx && G.fx.enter && G.fx.enter[sl.u.uid]) cls += ' enter-' + G.fx.enter[sl.u.uid];
           if (G.sel && G.sel.unit === sl.u.uid) cls += ' sel';
           else if (p === 0 && canUids[sl.u.uid] && !tk[key]) cls += ' can';
           inner = '<div class="sc">' + cardHTML(sl.u.id, unitView(st, sl.u, s)) + '</div>';
@@ -527,7 +536,7 @@
     function fz(p) {
       const f = st.players[p].fieldSpell;
       const key = 'fz:' + p;
-      const box = '<div class="slotfz' + (f ? '' : ' emptyfz') + (tk[key] ? ' tgt' : '') + '">' + (f ? mini(cardHTML(f.id), 63, 0.45) : '') + '</div>';
+      const box = '<div class="slotfz' + (f ? '' : ' emptyfz') + (tk[key] ? ' tgt' : '') + (G.fx && G.fx.fz && G.fx.fz[p] ? ' fzin' : '') + '">' + (f ? mini(cardHTML(f.id), 63, 0.45) : '') + '</div>';
       const lbl = '<span style="width:76px' + (p === 0 ? ';text-align:right' : '') + '">' + (p === 0 ? 'Dein Feldzauber' : 'Feldzauber Gegner') + '</span>';
       return '<button class="fz" data-k="' + key + '">' + (p === 1 ? box + lbl : lbl + box) + '</button>';
     }
@@ -547,7 +556,7 @@
       const sel = G.sel && G.sel.hand === h;
       const rot = n > 1 ? ((h - (n - 1) / 2) * (step < CW ? 2 : 0)) : 0;
       const drop = n > 1 ? Math.abs(h - (n - 1) / 2) * (step < CW ? 3 : 0) : 0;
-      return '<button class="hc' + (sel ? ' sel' : '') + (affordable[h] || st.current !== 0 ? '' : ' unaff') + '" style="left:' + (startX + h * step) + 'px;z-index:' + (h + 1) + ';--rot:' + rot + 'deg;--drop:' + drop + 'px" data-k="hand:' + h + '" aria-label="' + esc(BY_ID[c.id].name) + ', kostet ' + cst.cost + '"><div class="sc">' +
+      return '<button class="hc' + (sel ? ' sel' : '') + (G.fx && G.fx.drawn && G.fx.drawn[c.uid] ? ' drawn' : '') + (affordable[h] || st.current !== 0 ? '' : ' unaff') + '" style="left:' + (startX + h * step) + 'px;z-index:' + (h + 1) + ';--rot:' + rot + 'deg;--drop:' + drop + 'px" data-k="hand:' + h + '" aria-label="' + esc(BY_ID[c.id].name) + ', kostet ' + cst.cost + '"><div class="sc">' +
         cardHTML(c.id, { cost: cst.cost, costMode: cst.delta ? 'season' : '', season: st.season, delta: cst.delta }) + '</div></button>';
     }).join('') + '</div>';
 
@@ -557,9 +566,9 @@
       '<div class="watermark">' + SN[st.season] + '</div>' +
       '<div class="topbtns"><button class="iconbtn" data-k="btn:menu" aria-label="Zum Menü">' + ICON.door + '</button><button class="iconbtn" data-k="btn:log" aria-label="Verlauf">' + ICON.list + '</button><button class="iconbtn" data-k="btn:rules" aria-label="Regeln">' + ICON.book + '</button></div>' +
       '<div class="layer">' +
-      '<div class="opp-hand">' + op.hand.map(function () { return mini(backHTML(), 36, 0.2572); }).join('') + '<span style="margin-left:8px">Gegner: ' + op.hand.length + ' Handkarten</span></div>' +
+      '<div class="opp-hand">' + op.hand.map(function (c, i) { return '<div class="' + (G.fx && G.fx.oppDraw && i >= op.hand.length - G.fx.oppDraw ? 'odrawn' : '') + '">' + mini(backHTML(), 36, 0.2572) + '</div>'; }).join('') + '<span style="margin-left:8px">Gegner: ' + op.hand.length + ' Handkarten</span></div>' +
       '<div class="row">' + statsBox(1) + slots(1) + piles(1) + '</div>' +
-      '<div class="strip">' + fz(1) + '<div class="band"><div class="chips">' + chips.join('') + '</div><div class="bandinfo">Jahr ' + st.year + ' · ' + info + '</div></div>' + fz(0) + '</div>' +
+      '<div class="strip">' + fz(1) + '<div class="band"><div class="chips' + (G.fx && G.fx.band ? ' shift' : '') + '">' + chips.join('') + '</div><div class="bandinfo">Jahr ' + st.year + ' · ' + info + '</div></div>' + fz(0) + '</div>' +
       '<div class="row">' + statsBox(0) + slots(0) + piles(0) + '</div>' +
       '<div class="handrow"><div class="hint">' + ctl.hint + '</div>' + hand + '<div class="side-actions">' + ctl.buttons + '</div></div>' +
       '</div>' +
@@ -571,7 +580,7 @@
     const b = [];
     let hint = '';
     if (st.winner !== null) hint = 'Die Partie ist beendet.';
-    else if (st.current !== 0 || G.busy) hint = 'Der Computer ist am Zug …';
+    else if (st.current !== 0 || G.busy) hint = st.current !== 0 ? 'Der Computer ist am Zug …' : 'Einen Moment …';
     else if (G.pending) {
       hint = G.pending.kind === 'boar' ? 'Wähle eine eigene Einheit, die das Wildschwein opfert, oder verzichte.' : 'Wähle die gegnerische Einheit, die eingefroren wird.';
       if (G.pending.kind === 'boar') b.push('<button class="btn small" data-k="btn:noboar">Nicht opfern</button>');
@@ -615,28 +624,163 @@
     return items.slice(-3).join(' · ');
   }
 
-  function doAct(a) {
+  /* ---------- Animationen ---------- */
+  function speed() {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 0.35;
+    return { slow: 1.5, normal: 1, fast: 0.5 }[S.aiSpeed] || 1;
+  }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function rectOf(el) {
+    const r = el.getBoundingClientRect(), sr = stage.getBoundingClientRect(), k = sr.width / 1280;
+    return { x: (r.left - sr.left) / k, y: (r.top - sr.top) / k, w: r.width / k, h: r.height / k };
+  }
+  function fxLayer() {
+    let l = stage.querySelector('#fx');
+    if (!l) { l = document.createElement('div'); l.id = 'fx'; stage.appendChild(l); }
+    return l;
+  }
+  function addFx(html, r, cls) {
+    const d = document.createElement('div');
+    d.className = 'fxel ' + (cls || '');
+    d.style.left = r.x + 'px'; d.style.top = r.y + 'px'; d.style.width = r.w + 'px'; d.style.height = r.h + 'px';
+    d.innerHTML = html;
+    fxLayer().appendChild(d);
+    return d;
+  }
+  function snapshot() {
+    const st = G.state;
+    const snap = { units: {}, hand: {}, oppHand: st.players[1].hand.length, life: [st.players[0].life, st.players[1].life], round: st.round, current: st.current,
+      fz: [st.players[0].fieldSpell && st.players[0].fieldSpell.uid, st.players[1].fieldSpell && st.players[1].fieldSpell.uid] };
+    for (let p = 0; p < 2; p++) st.players[p].field.forEach(function (sl, s) {
+      if (sl && sl.u) {
+        const el = stage.querySelector('[data-k="slot:' + p + ':' + s + '"]');
+        snap.units[sl.u.uid] = { p: p, s: s, id: sl.u.id, rect: el ? rectOf(el) : null, html: el && el.querySelector('.sc') ? el.querySelector('.sc').outerHTML : '' };
+      }
+    });
+    st.players[0].hand.forEach(function (c) { snap.hand[c.uid] = true; });
+    return snap;
+  }
+  function targetEl(a, st) {
+    if (a.target === 'player') return stage.querySelector('[data-k="player:' + (1 - st.current) + '"]');
+    if (typeof a.target === 'string' && a.target[0] === 'h') return stage.querySelector('[data-k="slot:' + st.current + ':' + a.target.slice(1) + '"]');
+    if (a.target != null) { const f = E.findUnit(st, a.target); if (f) return stage.querySelector('[data-k="slot:' + f.p + ':' + f.s + '"]'); }
+    return null;
+  }
+  function burst(r) { const d = addFx('', { x: r.x + r.w / 2 - 60, y: r.y + r.h / 2 - 60, w: 120, h: 120 }, 'burst'); setTimeout(function () { d.remove(); }, 600); }
+  function pulse(r) { const d = addFx('', { x: r.x - 6, y: r.y - 6, w: r.w + 12, h: r.h + 12 }, 'pulse'); setTimeout(function () { d.remove(); }, 900); }
+  function banner(text, sub, color, ms) {
+    const d = addFx('<div class="bn" style="background:' + (color || 'rgba(20,19,17,.88)') + '"><b>' + esc(text) + '</b>' + (sub ? '<span>' + esc(sub) + '</span>' : '') + '</div>', { x: 0, y: 0, w: 1280, h: 720 }, 'fxbanner');
+    d.style.animationDuration = ms + 'ms';
+    return wait(ms).then(function () { d.remove(); });
+  }
+  async function preAnim(a, m) {
+    const st = G.state;
+    if (a.t === 'attack') {
+      const f = E.findUnit(st, a.a);
+      const el = f && stage.querySelector('[data-k="slot:' + f.p + ':' + f.s + '"]');
+      const tEl = targetEl(a, st);
+      if (!el || !tEl) return;
+      const r1 = rectOf(el), r2 = rectOf(tEl);
+      const dx = (r2.x + r2.w / 2) - (r1.x + r1.w / 2), dy = (r2.y + r2.h / 2) - (r1.y + r1.h / 2);
+      el.style.zIndex = 20;
+      const dur = 560 * m;
+      el.animate([{ translate: '0 0' }, { translate: (dx * 0.72) + 'px ' + (dy * 0.72) + 'px', offset: 0.45 }, { translate: '0 0' }], { duration: dur, easing: 'ease-in-out' });
+      setTimeout(function () { burst(r2); }, dur * 0.45);
+      await wait(dur);
+    } else if (a.t === 'play') {
+      const c = st.players[st.current].hand[a.h];
+      const d = BY_ID[c.id];
+      if (d.type === 'unit') return;
+      const cst = E.costOf(st, c.id);
+      const big = addFx('<div class="sc">' + cardHTML(c.id, { cost: cst.cost, costMode: cst.delta ? 'season' : '', season: st.season, delta: cst.delta }) + '</div>', { x: 640 - 105, y: 200, w: 210, h: 306 }, 'reveal');
+      big.style.animationDuration = (1000 * m) + 'ms';
+      await wait(1000 * m);
+      big.remove();
+      const tEl = d.type === 'field' ? stage.querySelector('[data-k="fz:' + st.current + '"]') : targetEl(a, st);
+      if (tEl) pulse(rectOf(tEl));
+      await wait(250 * m);
+    }
+  }
+  async function animateAct(a) {
+    const m = speed();
+    G.busy = true;
+    await preAnim(a, m);
+    const before = snapshot();
     E.apply(G.state, a);
     G.sel = null; G.pending = null;
+    const st = G.state;
+    const fx = { enter: {}, drawn: {}, fz: {} };
+    const after = {};
+    for (let p = 0; p < 2; p++) st.players[p].field.forEach(function (sl, s) { if (sl && sl.u) after[sl.u.uid] = { p: p, s: s }; });
+    Object.keys(after).forEach(function (uid) { if (!before.units[uid]) fx.enter[uid] = after[uid].p === 0 ? 'me' : 'op'; });
+    st.players[0].hand.forEach(function (c) { if (!before.hand[c.uid]) fx.drawn[c.uid] = true; });
+    if (st.players[1].hand.length > before.oppHand) fx.oppDraw = st.players[1].hand.length - before.oppHand;
+    for (let p = 0; p < 2; p++) { const f = st.players[p].fieldSpell; if (f && f.uid !== before.fz[p]) fx.fz[p] = true; }
+    const roundChanged = st.round !== before.round;
+    if (roundChanged) fx.band = true;
+    G.fx = fx;
     const t = newLogText();
-    render(); if (t) toast(t);
+    render();
+    G.fx = null;
+    if (t) toast(t);
+    /* zerstörte, zurückgeschickte und verschobene Karten */
+    let longest = Object.keys(fx.enter).length || Object.keys(fx.drawn).length ? 500 * m : 0;
+    Object.keys(before.units).forEach(function (uid) {
+      const b = before.units[uid];
+      if (!b.rect) return;
+      if (after[uid]) {
+        if (after[uid].s !== b.s || after[uid].p !== b.p) {
+          const el = stage.querySelector('[data-k="slot:' + after[uid].p + ':' + after[uid].s + '"]');
+          if (el) { const r = rectOf(el); el.animate([{ translate: (b.rect.x - r.x) + 'px ' + (b.rect.y - r.y) + 'px' }, { translate: '0 0' }], { duration: 450 * m, easing: 'ease-out' }); longest = Math.max(longest, 450 * m); }
+        }
+        return;
+      }
+      const owner = st.players[b.p];
+      const bounced = owner.hand.some(function (c) { return String(c.uid) === String(uid); });
+      const g = addFx(b.html, b.rect, bounced ? 'bounce' : 'crumble');
+      g.style.animationDuration = (700 * m) + 'ms';
+      setTimeout(function () { g.remove(); }, 700 * m);
+      longest = Math.max(longest, 700 * m);
+    });
+    /* Lebenskraft */
+    for (let p = 0; p < 2; p++) {
+      const dl = st.players[p].life - before.life[p];
+      if (!dl) continue;
+      const el = stage.querySelector('[data-k="player:' + p + '"]');
+      if (!el) continue;
+      const r = rectOf(el);
+      const f = addFx('<span>' + (dl < 0 ? '−' : '+') + Math.abs(dl) + '</span>', { x: r.x + r.w - 70, y: r.y + 4, w: 70, h: 40 }, 'float' + (dl < 0 ? ' hurt' : ''));
+      f.style.animationDuration = (1200 * m) + 'ms';
+      setTimeout(function () { f.remove(); }, 1200 * m);
+      el.animate([{ translate: '0 0' }, { translate: '-7px 0' }, { translate: '7px 0' }, { translate: '-5px 0' }, { translate: '0 0' }], { duration: 420 * m });
+      longest = Math.max(longest, 700 * m);
+    }
+    await wait(longest);
+    if (st.winner === null && roundChanged) await banner(SN[st.season] + ' · Runde ' + st.round, st.history.length && st.history[st.history.length - 1].season === st.season ? 'Die Jahreszeit hält an' : (st.year > 1 && st.season === 'spring' ? 'Jahr ' + st.year + ' beginnt' : ''), COSTBG[st.season], 1300 * m);
+    if (st.winner === null && st.current !== before.current) await banner(st.current === 0 ? 'Du bist am Zug' : 'Computer ist am Zug', '', null, 850 * m);
+    G.busy = false;
+  }
+  async function doAct(a) {
+    if (G.busy) return;
+    await animateAct(a);
+    if (!G) return;
+    render();
     if (G.state.winner !== null) { setTimeout(gameOver, 700); return; }
     if (G.state.current === 1) aiTurn();
   }
-  function aiTurn() {
+  async function aiTurn() {
     G.busy = true; render();
-    const step = function () {
+    await wait(500 * speed());
+    while (G && G.state.winner === null && G.state.current === 1) {
+      const a = AI.choose(G.state, S.difficulty);
+      await animateAct(a);
       if (!G) return;
-      const st = G.state;
-      if (st.winner !== null) { G.busy = false; render(); setTimeout(gameOver, 700); return; }
-      if (st.current !== 1) { G.busy = false; render(); const t = newLogText(); toast((t ? t + ' · ' : '') + 'Du bist am Zug.'); return; }
-      const a = AI.choose(st, S.difficulty);
-      E.apply(st, a);
-      const t = newLogText();
-      render(); if (t) toast(t);
-      setTimeout(step, a.t === 'end' ? 400 : 900);
-    };
-    setTimeout(step, 700);
+      G.busy = true;
+      if (G.state.current === 1) await wait(650 * speed());
+    }
+    if (!G) return;
+    G.busy = false; render();
+    if (G.state.winner !== null) setTimeout(gameOver, 700);
   }
   function gameOver() {
     if (!G) return;
@@ -760,6 +904,7 @@
   stage.addEventListener('touchmove', function () { clearTimeout(pressT); }, { passive: true });
 
   /* ---------- Start ---------- */
+  window.TEMPORA_DEBUG = function () { return G; };
   /* Menü öffnen und Decks im Hintergrund nachladen */
   const drawMenu = openMenu;
   openMenu = function () { drawMenu(); if (!DECKS) loadDecks().then(function () { if (!$('#menu').hidden) drawMenu(); }); };

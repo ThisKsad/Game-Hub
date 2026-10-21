@@ -203,6 +203,42 @@ details[open].panel>summary::after{content:"▴"}
 .rotate{position:absolute; inset:0; display:none; place-items:center; text-align:center; padding:30px; background:var(--bg); z-index:20}
 @media (orientation:portrait) and (max-width:820px){ .rotate{display:grid} }
 
+/* ---------- Animationen ---------- */
+#fx{position:absolute; inset:0; pointer-events:none; z-index:15}
+.fxel{position:absolute}
+.fxel .sc{transform:scale(.7); transform-origin:0 0; position:absolute; left:0; top:0}
+.fxel.reveal .sc{transform:scale(1.5)}
+.reveal{animation:reveal 1s ease both}
+@keyframes reveal{0%{opacity:0; scale:.6} 18%{opacity:1; scale:1} 80%{opacity:1; scale:1} 100%{opacity:0; scale:.85}}
+.burst{border-radius:50%; background:radial-gradient(circle, rgba(255,255,255,.95) 0%, rgba(255,226,140,.7) 30%, rgba(255,160,80,0) 70%); animation:burst .55s ease-out forwards}
+@keyframes burst{from{scale:.2; opacity:1} to{scale:1.4; opacity:0}}
+.pulse{border-radius:14px; box-shadow:0 0 0 4px #7FD6F2, 0 0 24px rgba(127,214,242,.9); animation:pulse .9s ease-out forwards}
+@keyframes pulse{from{opacity:1; scale:1.15} to{opacity:0; scale:1}}
+.crumble{animation:crumble .7s ease-in forwards}
+@keyframes crumble{0%{opacity:1} 30%{rotate:-4deg} 100%{opacity:0; scale:.55; rotate:10deg; translate:0 30px; filter:grayscale(1) blur(3px)}}
+.bounce{animation:bounceout .7s ease-in forwards}
+@keyframes bounceout{to{opacity:0; translate:0 -120px; scale:.6}}
+.float{display:flex; align-items:center; justify-content:flex-end; font-size:30px; font-weight:700; color:#7FD49B; text-shadow:0 2px 6px rgba(0,0,0,.7); animation:floatup 1.2s ease-out forwards}
+.float.hurt{color:#FF8A7A}
+@keyframes floatup{0%{opacity:0; translate:0 10px} 15%{opacity:1} 100%{opacity:0; translate:0 -50px}}
+.fxbanner{display:grid; place-items:center; animation:bannerin 1.2s ease both}
+.fxbanner .bn{display:flex; flex-direction:column; align-items:center; gap:4px; padding:18px 60px; border-radius:20px; border:2px solid rgba(255,255,255,.7); box-shadow:0 12px 40px rgba(0,0,0,.55)}
+.fxbanner b{font-family:var(--display); font-size:52px; color:#fff; letter-spacing:.03em}
+.fxbanner span{font-size:18px; color:#F3F1EC}
+@keyframes bannerin{0%{opacity:0; scale:.85} 15%{opacity:1; scale:1} 80%{opacity:1; scale:1} 100%{opacity:0; scale:1.05}}
+.slot.enter-me{animation:enterme .5s ease-out}
+.slot.enter-op{animation:enterop .5s ease-out}
+@keyframes enterme{from{translate:0 170px; scale:1.15; opacity:0} 60%{opacity:1}}
+@keyframes enterop{from{translate:0 -120px; scale:1.15; opacity:0} 60%{opacity:1}}
+.handfan .hc.drawn{animation:drawin .5s ease-out}
+@keyframes drawin{from{translate:420px -190px; opacity:0}}
+.odrawn{animation:odrawin .45s ease-out}
+@keyframes odrawin{from{translate:300px 60px; opacity:0}}
+.slotfz.fzin{animation:fzin .6s ease-out}
+@keyframes fzin{from{scale:1.8; opacity:0; filter:brightness(1.8)}}
+.chips.shift{animation:bandshift .6s ease-out}
+@keyframes bandshift{from{translate:88px 0}}
+
 /* ---------- Dialoge ---------- */
 .modal{position:fixed; inset:0; background:rgba(10,9,8,.72); display:grid; place-items:center; padding:16px; z-index:30}
 .modal .box{background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:20px; width:min(760px, 100%); max-height:calc(100vh - 32px); overflow:auto}
