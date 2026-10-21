@@ -564,7 +564,7 @@
       const sel = G.sel && G.sel.hand === h;
       const rot = n > 1 ? ((h - (n - 1) / 2) * (step < CW ? 2 : 0)) : 0;
       const drop = n > 1 ? Math.abs(h - (n - 1) / 2) * (step < CW ? 3 : 0) : 0;
-      return '<button class="hc' + (sel ? ' sel' : '') + (G.fx && G.fx.drawn && G.fx.drawn[c.uid] ? ' drawn' : '') + (affordable[h] || st.current !== 0 ? '' : ' unaff') + '" style="left:' + (startX + h * step) + 'px;z-index:' + (h + 1) + ';--rot:' + rot + 'deg;--drop:' + drop + 'px" data-k="hand:' + h + '" aria-label="' + esc(BY_ID[c.id].name) + ', kostet ' + cst.cost + '"><div class="sc">' +
+      return '<button class="hc' + (sel ? ' sel' : '') + (G.fx && G.fx.drawn && G.fx.drawn[c.uid] ? ' drawn' : '') + (st.current !== 0 ? '' : affordable[h] ? ' playable' : ' unaff') + '" style="left:' + (startX + h * step) + 'px;z-index:' + (h + 1) + ';--rot:' + rot + 'deg;--drop:' + drop + 'px" data-k="hand:' + h + '" aria-label="' + esc(BY_ID[c.id].name) + ', kostet ' + cst.cost + '"><div class="sc">' +
         cardHTML(c.id, { cost: cst.cost, costMode: cst.delta ? 'season' : '', season: st.season, delta: cst.delta }) + '</div></button>';
     }).join('') + '</div>';
 

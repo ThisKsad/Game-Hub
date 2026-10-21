@@ -198,7 +198,9 @@ details[open].panel>summary::after{content:"▴"}
 .handfan .hc:hover,.handfan .hc:focus-visible,.handfan .hc.sel{z-index:60 !important; transform:translateY(-16px) rotate(0deg)}
 .hc .sc{transform:scale(.8); transform-origin:0 0; position:absolute; left:0; top:0}
 .mull .hc:hover{transform:translateY(-6px)}
-.hc.unaff{filter:saturate(.45) brightness(.8)}
+.hc.unaff{filter:saturate(.35) brightness(.55)}
+.hc.playable::after{content:""; position:absolute; left:-3px; top:-3px; width:118px; height:169px; border-radius:12px; box-shadow:0 0 0 2.5px #F2C94C, 0 0 16px rgba(242,201,76,.75); pointer-events:none}
+.handfan .hc.playable{--drop:-4px}
 .sel{outline:3px solid #F2C94C; outline-offset:3px; border-radius:12px}
 .tgt{box-shadow:0 0 0 3px #7FD6F2, 0 0 18px rgba(127,214,242,.8); border-radius:12px; cursor:pointer}
 .stats.tgt{box-shadow:0 0 0 3px #F2B6AE, 0 0 18px rgba(242,182,174,.9)}
