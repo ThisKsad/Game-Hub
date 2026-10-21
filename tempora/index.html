@@ -239,6 +239,18 @@ details[open].panel>summary::after{content:"▴"}
 .chips.shift{animation:bandshift .6s ease-out}
 @keyframes bandshift{from{translate:88px 0}}
 
+.endscreen{position:absolute; inset:0; z-index:25; display:grid; align-items:center; background:rgba(10,9,8,.45); animation:fadein .5s ease both}
+.endband{text-align:center; padding:30px 20px 34px; background:linear-gradient(180deg, rgba(20,19,17,.94), rgba(20,19,17,.94)), var(--sc); border-top:3px solid var(--sc); border-bottom:3px solid var(--sc); box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.endicon{width:76px; height:76px; margin:0 auto 6px; animation:spin 30s linear infinite}
+.endband h2{font-size:80px; letter-spacing:.04em; animation:endpop .7s cubic-bezier(.2,1.4,.4,1) both}
+.win .endband h2{color:#F6D66B; text-shadow:0 0 30px rgba(246,214,107,.55)}
+.lose .endband h2{color:#E9E6E0}
+.endband p{margin:6px 0 0; font-size:20px; color:#F3F1EC}
+.endband .endstats{font-size:15px; color:var(--muted)}
+.endbtns{display:flex; gap:12px; justify-content:center; margin-top:22px; flex-wrap:wrap}
+@keyframes endpop{from{scale:.4; opacity:0}}
+@keyframes fadein{from{opacity:0}}
+
 /* ---------- Dialoge ---------- */
 .modal{position:fixed; inset:0; background:rgba(10,9,8,.72); display:grid; place-items:center; padding:16px; z-index:30}
 .modal .box{background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:20px; width:min(760px, 100%); max-height:calc(100vh - 32px); overflow:auto}

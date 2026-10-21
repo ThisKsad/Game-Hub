@@ -472,7 +472,11 @@
         else if (typeof a.target === 'string') keys['slot:0:' + a.target.slice(1)] = a;
         else { const f = E.findUnit(st, a.target); if (f) keys['slot:' + f.p + ':' + f.s] = a; }
       } else if (a.t === 'attack') {
-        if (a.target === 'player') keys['player:1'] = a;
+        if (a.target === 'player') {
+          keys['player:1'] = a;
+          /* Direkter Angriff: auch jedes freie Feld des Gegners ist ein Ziel */
+          E.activeSlots(st).forEach(function (s) { const sl = st.players[1].field[s]; if (!sl || !sl.u || !E.attackable(st, sl.u, s)) keys['slot:1:' + s] = a; });
+        }
         else { const f = E.findUnit(st, a.target); if (f) keys['slot:' + f.p + ':' + f.s] = a; }
       } else if (a.t === 'move') keys['slot:0:' + a.slot] = a;
     });
@@ -572,7 +576,8 @@
       '<div class="row">' + statsBox(0) + slots(0) + piles(0) + '</div>' +
       '<div class="handrow"><div class="hint">' + ctl.hint + '</div>' + hand + '<div class="side-actions">' + ctl.buttons + '</div></div>' +
       '</div>' +
-      '<div class="toast" id="toast" style="opacity:' + (G.toast ? 1 : 0) + '">' + esc(G.toast) + '</div>';
+      '<div class="toast" id="toast" style="opacity:' + (G.toast ? 1 : 0) + '">' + esc(G.toast) + '</div>' +
+      (G.showEnd && st.winner !== null ? endScreenHTML() : '');
   }
 
   function controls() {
@@ -597,7 +602,7 @@
         const f = E.findUnit(st, G.sel.unit);
         const atk = cand.filter(function (a) { return a.t === 'attack'; });
         const mv = cand.filter(function (a) { return a.t === 'move'; });
-        hint = atk.length ? (atk.some(function (a) { return a.target === 'player'; }) ? 'Greif den Gegner direkt an.' : 'Wähle ein Angriffsziel.') : '';
+        hint = atk.length ? (atk.some(function (a) { return a.target === 'player'; }) ? 'Greif den Gegner direkt an: Tippe ein freies Feld oder seinen Namen an.' : 'Wähle ein Angriffsziel.') : '';
         if (mv.length) hint += (hint ? ' ' : '') + 'Oder verschiebe die Karte auf einen freien Platz.';
         if (!hint) hint = f && f.inst.playedTurn === st.T ? 'Neue Einheiten greifen erst im nächsten Zug an.' : 'Diese Einheit kann gerade nicht angreifen.';
         if (cand.some(function (a) { return a.t === 'sacrifice'; })) b.push('<button class="btn small" data-k="btn:sacrifice">Opfern (+1 Energie)</button>');
@@ -784,12 +789,20 @@
   }
   function gameOver() {
     if (!G) return;
-    const st = G.state;
-    const t = st.winner === 0 ? 'Gewonnen!' : st.winner === 1 ? 'Verloren' : 'Unentschieden';
-    openModal('<h2>' + t + '</h2><p>Die Partie endete in Runde ' + st.round + ' (' + SN[st.season] + ', Jahr ' + st.year + '). Lebenskraft: Du ' + st.players[0].life + ', Computer ' + st.players[1].life + '. Der Computer spielte das ' + C.STARTER_DECKS[G.aiDeck].name + '.</p>' +
-      '<div class="modal-actions"><button class="btn" id="goBoard">Spielfeld ansehen</button><button class="btn" id="goMenu">Menü</button><button class="btn primary" id="goAgain">Nochmal</button></div>',
-      function (m) { $('#goBoard', m).onclick = closeModal; $('#goMenu', m).onclick = function () { closeModal(); G = null; openMenu(); }; $('#goAgain', m).onclick = function () { closeModal(); startGame(); }; });
+    G.showEnd = true;
+    render();
   }
+  function endScreenHTML() {
+    const st = G.state;
+    const win = st.winner === 0, tie = st.winner === 'tie';
+    const t = win ? 'Sieg!' : tie ? 'Unentschieden' : 'Niederlage';
+    const sub = win ? 'Du hast den Computer bezwungen.' : tie ? 'Beide Seiten sind gleichzeitig gefallen.' : 'Der Computer hat diesmal gewonnen.';
+    return '<div class="endscreen ' + (win ? 'win' : tie ? 'tie' : 'lose') + '"><div class="endband" style="--sc:' + COSTBG[st.season] + '">' +
+      '<div class="endicon">' + ICON.wheel + '</div><h2>' + t + '</h2><p>' + sub + '</p>' +
+      '<p class="endstats">Runde ' + st.round + ' · ' + SN[st.season] + ', Jahr ' + st.year + ' · Lebenskraft: Du ' + Math.max(0, st.players[0].life) + ', Computer ' + Math.max(0, st.players[1].life) + ' · Gegner: ' + esc(C.STARTER_DECKS[G.aiDeck].name) + '</p>' +
+      '<div class="endbtns"><button class="btn primary big" data-k="btn:again">Nochmal</button><button class="btn" data-k="btn:board">Spielfeld ansehen</button><button class="btn" data-k="btn:tomenu">Menü</button></div></div></div>';
+  }
+
 
   /* ---------- Großansicht ---------- */
   function showDetail(ref) {
@@ -853,6 +866,9 @@
       if (n === 'log') return showLog();
       if (n === 'rules') return showRules();
       if (n === 'over') return gameOver();
+      if (n === 'again') { G = null; return startGame(); }
+      if (n === 'board') { G.showEnd = false; return render(); }
+      if (n === 'tomenu') { G = null; return openMenu(); }
       if (n === 'end') { if (st.current === 0 && !G.busy) doAct({ t: 'end' }); return; }
       if (n === 'cancel') { G.sel = null; G.pending = null; return render(); }
       if (n === 'detail' && G.sel) { if (G.sel.hand != null) return showDetail({ id: st.players[0].hand[G.sel.hand].id, hand: true }); return showDetail({ uid: G.sel.unit }); }
