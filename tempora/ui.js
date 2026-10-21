@@ -42,7 +42,7 @@
     player: 'lukas', difficulty: 'medium', aiDeck: 'random', first: 'random', myDeck: null,
     startSeason: 'spring', turnMode: 'alternate', fieldMode: 'grow', growAt: 'spring2',
     life: 20, deckSize: 20, startHand: 4, handLimit: 8, copies: 1,
-    mulligan: false, aiSpeed: 'normal', damageStays: true, weathering: true, openAttack: false, lateDamage: false, overwriteHolder: true, compensation: 'none', allowIncomplete: false, cardBack: 'jahreskreis'
+    mulligan: false, aiSpeed: 'normal', damageStays: true, weathering: true, openAttack: false, lateDamage: false, emptyDeck: 'fixed', emptyDeckAmount: 2, reshufflePenalty: 3, emptyOnlyMain: false, overwriteHolder: true, compensation: 'none', allowIncomplete: false, cardBack: 'jahreskreis'
   };
   let S = loadSettings();
   function loadSettings() { try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}); } catch (e) { return Object.assign({}, DEFAULTS); } }
@@ -195,6 +195,10 @@
       chk('allowIncomplete', 'Unvollständige Decks erlauben') +
       chk('damageStays', 'Schaden bleibt bis Rundenende') + chk('weathering', 'Verwitterung: −1 Verteidigung je Jahr seit dem Ausspielen') +
       chk('openAttack', 'Direkter Angriff, wenn gegenüber frei und kein Wächter') + chk('lateDamage', 'Zeitdruck ab Jahr 3: steigender Lebensverlust je Runde') +
+      '<div class="group-title">Leeres Deck</div>' +
+      opt('emptyDeck', 'Wenn das Deck leer ist', [['fixed', 'Fester Verlust pro fehlender Karte'], ['fatigue', 'Steigende Erschöpfung (1, 2, 3 …)'], ['none', 'Kein Verlust'], ['reshuffle', 'Ablage wird neues Deck']]) +
+      num('emptyDeckAmount', 'Verlust bei „fest“', 1, 10) + num('reshufflePenalty', 'Verlust beim Neumischen', 0, 10) +
+      chk('emptyOnlyMain', 'Nur das normale Ziehen zählt (Herbst und Effekte nicht)') +
       '<div class="group-title">Ansicht und Spieler</div>' +
       opt('aiSpeed', 'Tempo der Animationen', [['slow', 'Langsam'], ['normal', 'Normal'], ['fast', 'Schnell']]) +
       opt('cardBack', 'Kartenrückseite', [['jahreskreis', 'Jahreskreis'], ['more', 'Weitere Designs folgen', true]]) +
@@ -398,7 +402,7 @@
     if (prob) { updateWarn(); confirmBox('Deck nicht spielbereit', prob, [{ label: 'OK', value: 1, cls: 'primary' }]); return; }
     const ai = aiDeckCards();
     const cfg = { life: S.life, deckSize: S.deckSize, startHand: S.startHand, handLimit: S.handLimit, fieldMode: S.fieldMode, growAt: S.growAt,
-      startSeason: S.startSeason, overwriteHolder: S.overwriteHolder, compensation: S.compensation, damageStays: S.damageStays, weathering: S.weathering, openAttack: S.openAttack, lateDamage: S.lateDamage };
+      startSeason: S.startSeason, overwriteHolder: S.overwriteHolder, compensation: S.compensation, damageStays: S.damageStays, weathering: S.weathering, openAttack: S.openAttack, lateDamage: S.lateDamage, emptyDeck: S.emptyDeck, emptyDeckAmount: S.emptyDeckAmount, reshufflePenalty: S.reshufflePenalty, emptyOnlyMain: S.emptyOnlyMain };
     const first = S.first === 'me' ? 0 : S.first === 'ai' ? 1 : undefined;
     const state = E.newGame(cfg, [deck.cards, ai.cards], { first: first, names: ['Du', 'Computer'] });
     G = { state: state, sel: null, pending: null, busy: false, seen: 0, aiDeck: ai.key, toast: '', played: [[], []], startedAt: Date.now(), deckName: deck.name, deckCards: deck.cards.slice(), recorded: false };
@@ -729,7 +733,7 @@
       my_cards_played: G.played[0], ai_cards_played: G.played[1],
       duration_seconds: Math.round((Date.now() - G.startedAt) / 1000),
       settings: { life: S.life, deckSize: S.deckSize, startHand: S.startHand, handLimit: S.handLimit, copies: S.copies, fieldMode: S.fieldMode, growAt: S.growAt,
-        startSeason: S.startSeason, mulligan: S.mulligan, overwriteHolder: S.overwriteHolder, compensation: S.compensation, allowIncomplete: S.allowIncomplete, damageStays: S.damageStays, weathering: S.weathering, openAttack: S.openAttack, lateDamage: S.lateDamage },
+        startSeason: S.startSeason, mulligan: S.mulligan, overwriteHolder: S.overwriteHolder, compensation: S.compensation, allowIncomplete: S.allowIncomplete, damageStays: S.damageStays, weathering: S.weathering, openAttack: S.openAttack, lateDamage: S.lateDamage, emptyDeck: S.emptyDeck, emptyDeckAmount: S.emptyDeckAmount, reshufflePenalty: S.reshufflePenalty, emptyOnlyMain: S.emptyOnlyMain },
       version: 'proto-1'
     };
     STORE.saveGame(row).catch(function (e) { console.warn('Statistik wird später gespeichert', e); });

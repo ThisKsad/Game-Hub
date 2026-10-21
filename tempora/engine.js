@@ -12,7 +12,8 @@
   const DEFAULT_CFG = {
     life: 20, deckSize: 20, startHand: 4, handLimit: 8, maxEnergy: 8,
     fieldMode: 'grow', growAt: 'spring2', startSeason: 'spring',
-    overwriteHolder: true, compensation: 'none', damageStays: true, weathering: true, openAttack: false, lateDamage: false
+    overwriteHolder: true, compensation: 'none', damageStays: true, weathering: true, openAttack: false, lateDamage: false,
+    emptyDeck: 'fixed', emptyDeckAmount: 2, reshufflePenalty: 3, emptyOnlyMain: false
   };
 
   /* ---------- Zufall (mit Startwert, damit Simulationen reproduzierbar sind) ---------- */
@@ -192,12 +193,27 @@
     for (let i = 0; i < back.length; i++) pl.hand.push(pl.deck.shift());
   }
 
-  function draw(state, p, silent) {
+  /* extra: zusätzliches Ziehen (Ernte im Herbst, Karteneffekte) statt des normalen Ziehens im Zug */
+  function draw(state, p, silent, extra) {
     const pl = state.players[p];
-    if (!pl.deck.length) {
-      pl.life -= 2;
-      log(state, pl.name + ' kann nicht ziehen (Deck leer) und verliert 2 Lebenskraft.', 'damage');
+    const cfg = state.cfg;
+    if (!pl.deck.length && cfg.emptyDeck === 'reshuffle' && pl.discard.length) {
+      pl.deck = shuffle(state, pl.discard.map(function (id) { return newInst(state, id, p); }));
+      pl.discard = [];
+      pl.life -= cfg.reshufflePenalty;
+      log(state, 'Ein neues Jahr für das Deck: ' + pl.name + ' mischt die Ablage als neues Deck' + (cfg.reshufflePenalty ? ' und verliert ' + cfg.reshufflePenalty + ' Lebenskraft' : '') + '.', 'damage');
       checkWin(state);
+    }
+    if (!pl.deck.length) {
+      if (extra && cfg.emptyOnlyMain) return null;
+      let loss = 0;
+      if (cfg.emptyDeck === 'fixed') loss = cfg.emptyDeckAmount;
+      else if (cfg.emptyDeck === 'fatigue') { pl.fatigue = (pl.fatigue || 0) + 1; loss = pl.fatigue; }
+      if (loss) {
+        pl.life -= loss;
+        log(state, pl.name + ' kann nicht ziehen (Deck leer) und verliert ' + loss + ' Lebenskraft.', 'damage');
+        checkWin(state);
+      } else log(state, pl.name + ' kann nicht ziehen, das Deck ist leer.', 'info');
       return null;
     }
     const c = pl.deck.shift();
@@ -220,7 +236,7 @@
     pl.energy = e;
     let n = 1;
     if (state.season === 'autumn') n += 1;
-    for (let i = 0; i < n; i++) draw(state, p);
+    for (let i = 0; i < n; i++) draw(state, p, false, i > 0);
   }
 
   /* ---------- Rundenwechsel ---------- */
@@ -298,7 +314,7 @@
       for (let p = 0; p < 2; p++) {
         state.players[p].field.forEach(function (sl, s) {
           if (sl && sl.u && has(state, sl.u, s, 'harvestKing')) {
-            draw(state, p); draw(state, p);
+            draw(state, p, false, true); draw(state, p, false, true);
             log(state, 'Hirschkönig: ' + state.players[p].name + ' zieht 2 Karten.', 'info');
           }
         });
