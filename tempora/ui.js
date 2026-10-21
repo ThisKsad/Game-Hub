@@ -456,6 +456,7 @@
     if (E.hibernating(st, u, s)) flags.push('Winterschlaf');
     if (u.freezeTurn && u.freezeTurn >= st.T) flags.push('Eingefroren');
     if (E.isGuard(st, u, s) && d.kw.indexOf('guard') < 0) flags.push('Wächter');
+    if (u.haste && u.playedTurn === st.T) flags.push('Eile');
     if (u.noAbil) flags.push(u.halfStats ? 'Rückkehrer ½' : 'Rückkehrer');
     if (u.dmg && u.dmgRound === st.round) flags.push('Schaden ' + u.dmg);
     if (u.weather) flags.push('Verwittert −' + u.weather);
