@@ -27,6 +27,13 @@
     book: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/></svg>',
     wheel: '<svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="10.6" fill="none" stroke="#CFCBC3" stroke-width="0.5"/><path d="M11 11 L11 1.5 A9.5 9.5 0 0 1 20.5 11 Z" fill="#9A6A0E"/><path d="M11 11 L20.5 11 A9.5 9.5 0 0 1 11 20.5 Z" fill="#A34A22"/><path d="M11 11 L11 20.5 A9.5 9.5 0 0 1 1.5 11 Z" fill="#3E6A92"/><path d="M11 11 L1.5 11 A9.5 9.5 0 0 1 11 1.5 Z" fill="#4E7A3C"/><circle cx="11" cy="11" r="2.2" fill="#2A2926" stroke="#CFCBC3" stroke-width="0.4"/></svg>'
   };
+  const SICON = {
+    spring: '<svg viewBox="0 0 20 20" aria-hidden="true"><g fill="#F7C9D6"><circle cx="10" cy="5" r="3.6"/><circle cx="15" cy="8.6" r="3.6"/><circle cx="13" cy="14.4" r="3.6"/><circle cx="7" cy="14.4" r="3.6"/><circle cx="5" cy="8.6" r="3.6"/></g><circle cx="10" cy="10" r="2.4" fill="#E2B33C"/></svg>',
+    summer: '<svg viewBox="0 0 20 20" aria-hidden="true"><g stroke="#FFE08A" stroke-width="2" stroke-linecap="round"><path d="M10 1v3M10 16v3M1 10h3M16 10h3M3.6 3.6l2.1 2.1M14.3 14.3l2.1 2.1M3.6 16.4l2.1-2.1M14.3 5.7l2.1-2.1"/></g><circle cx="10" cy="10" r="4.6" fill="#FFE08A"/></svg>',
+    autumn: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1l1.6 3.8 3.6-1.4-1 3.9 4 .8-3 2.7 2 3.2-4.2-.5L10 19l-3-4.5-4.2.5 2-3.2-3-2.7 4-.8-1-3.9 3.6 1.4z" fill="#F2B98A"/><path d="M10 19V8" stroke="#7A3315" stroke-width="1.2"/></svg>',
+    winter: '<svg viewBox="0 0 20 20" aria-hidden="true"><g stroke="#E8F1F8" stroke-width="1.8" stroke-linecap="round"><path d="M10 1v18M2.2 5.5l15.6 9M2.2 14.5l15.6-9"/><path d="M10 4l-2-2M10 4l2-2M10 16l-2 2M10 16l2 2"/></g></svg>',
+    none: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 15c0-5 3-9 8-9s6 4 6 9z" fill="#E1DED8"/><path d="M8 9l2 3-1 3" stroke="#77736C" stroke-width="1.2" fill="none"/></svg>'
+  };
   const $ = function (sel, el) { return (el || document).querySelector(sel); };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
 
@@ -43,14 +50,17 @@
 
   /* ---------- Karten-HTML ---------- */
   function backHTML() { return '<div class="back"><div style="width:96px;height:96px">' + ICON.wheel + '</div></div>'; }
-  function costHTML(type, n, mode, curSeason) {
+  function costHTML(type, n, mode, curSeason, delta) {
     const sh = 'shape-' + type;
+    const dl = delta ? '<span class="delta ' + (delta < 0 ? 'minus' : 'plus') + '">' + (delta < 0 ? '−' : '+') + Math.abs(delta) + '</span>' : '';
     let bg = '#3F3D39';
     if (mode === 'season' && COSTBG[curSeason]) bg = COSTBG[curSeason];
     const i = '<i class="' + sh + '" style="background:' + bg + '">' + n + '</i>';
-    if (mode === 'cheaper') return '<span class="cost ' + sh + ' cheaper"><span class="' + sh + '">' + i + '</span></span>';
-    if (mode === 'pricier') return '<span class="cost ' + sh + ' pricier">' + i + '</span>';
-    return '<span class="cost ' + sh + '">' + i + '</span>';
+    let c;
+    if (mode === 'cheaper') c = '<span class="cost ' + sh + ' cheaper"><span class="' + sh + '">' + i + '</span></span>';
+    else if (mode === 'pricier') c = '<span class="cost ' + sh + ' pricier">' + i + '</span>';
+    else c = '<span class="cost ' + sh + ' ring"><span class="' + sh + '">' + i + '</span></span>';
+    return '<span class="costwrap">' + c + dl + '</span>';
   }
   /* o: { cost, costMode, season (aktuelle Jahreszeit), atk, def, atkMode, defMode, noAbil, iced, flags[] } */
   function cardHTML(id, o) {
@@ -69,8 +79,8 @@
         '<span class="badge def ' + (o.defMode || '') + '">' + ICON.shield + '<span>' + df + '</span>' + (o.defMode === 'up' ? '<small>▲</small>' : o.defMode === 'down' ? '<small>▼</small>' : '') + '</span></div>';
     }
     const flags = (o.flags || []).map(function (f) { return '<span>' + esc(f) + '</span>'; }).join('');
-    return '<div class="card ' + d.type + (o.iced ? ' iced' : '') + '" style="--sb:' + s.b + ';--sbg:' + s.bg + ';--sab:' + s.ab + '">' +
-      '<div class="hd">' + costHTML(d.type, o.cost != null ? o.cost : d.cost, o.costMode, o.season) + '<div class="nm">' + esc(d.name) + '</div></div>' +
+    return '<div class="card ' + d.type + (o.iced ? ' iced' : '') + (o.delta < 0 ? ' deal' : '') + '" style="--sb:' + s.b + ';--sbg:' + s.bg + ';--sab:' + s.ab + '">' +
+      '<div class="hd">' + costHTML(d.type, o.cost != null ? o.cost : d.cost, o.costMode, o.season, o.delta) + '<div class="nm">' + esc(d.name) + '</div><span class="si">' + SICON[d.season] + '</span></div>' +
       '<div class="art"><div>' + (ART[id] || '') + '</div></div>' +
       '<div class="tl">' + tl + '</div><div class="tx">' + tx + '</div>' + ft +
       (flags ? '<div class="flag">' + flags + '</div>' : '') + '</div>';
@@ -504,12 +514,19 @@
     });
     const info = { spring: 'Verschieben: 1 Karte · Aufblühen', summer: 'Lange Tage: Eile · Sonnenplatz +2', autumn: 'Ernte: +1 Karte · Vergänglichkeit', winter: 'Eis auf den Außenplätzen · Frost −1' }[st.season];
 
-    const hand = me.hand.map(function (c, h) {
+    const HAND_W = 820, CW = 112;
+    const n = me.hand.length;
+    const step = n > 1 ? Math.min(CW + 12, (HAND_W - CW) / (n - 1)) : 0;
+    const span = n ? CW + step * (n - 1) : 0;
+    const startX = (HAND_W - span) / 2;
+    const hand = '<div class="handfan" style="width:' + HAND_W + 'px">' + me.hand.map(function (c, h) {
       const cst = E.costOf(st, c.id);
       const sel = G.sel && G.sel.hand === h;
-      return '<button class="hc' + (sel ? ' sel' : '') + (affordable[h] || st.current !== 0 ? '' : ' unaff') + '" data-k="hand:' + h + '" aria-label="' + esc(BY_ID[c.id].name) + ', kostet ' + cst.cost + '"><div class="sc">' +
-        cardHTML(c.id, { cost: cst.cost, costMode: cst.delta ? 'season' : '', season: st.season }) + '</div></button>';
-    }).join('');
+      const rot = n > 1 ? ((h - (n - 1) / 2) * (step < CW ? 2 : 0)) : 0;
+      const drop = n > 1 ? Math.abs(h - (n - 1) / 2) * (step < CW ? 3 : 0) : 0;
+      return '<button class="hc' + (sel ? ' sel' : '') + (affordable[h] || st.current !== 0 ? '' : ' unaff') + '" style="left:' + (startX + h * step) + 'px;z-index:' + (h + 1) + ';--rot:' + rot + 'deg;--drop:' + drop + 'px" data-k="hand:' + h + '" aria-label="' + esc(BY_ID[c.id].name) + ', kostet ' + cst.cost + '"><div class="sc">' +
+        cardHTML(c.id, { cost: cst.cost, costMode: cst.delta ? 'season' : '', season: st.season, delta: cst.delta }) + '</div></button>';
+    }).join('') + '</div>';
 
     const ctl = controls();
     stage.style.background = DECOR.background(prev, st.season, next);
