@@ -123,22 +123,63 @@
   const BY_ID = {};
   CARDS.forEach(function (c) { c.kw = c.kw || []; BY_ID[c.id] = c; });
 
-  const ANCHORS6 = ['kiesel', 'feldstein', 'steinmaennchen', 'findling', 'felswaechter', 'steingolem'];
+  /* Startdecks: Kern mit 20 Karten (wichtigste zuerst). Für andere Deckgrößen und Kopien-Regeln
+     baut buildStarter() passende Versionen: zuerst der Kern, dann Kopien des Kerns, dann weitere Karten. */
   const STARTER_DECKS = {
-    spring: { name: 'Frühlings-Startdeck', cards: ['keimling', 'schwalbe', 'hummel', 'baer', 'austrieb', 'boden', 'ewigerfruehling']
-      .concat(ANCHORS6, ['eidechse', 'wespe', 'lauffeuer', 'eismauer', 'eiskristall', 'steinkreis', 'steinlawine']) },
-    summer: { name: 'Sommer-Startdeck', cards: ['eidechse', 'wespe', 'loewe', 'drache', 'lauffeuer', 'spaetsommer', 'gleissend']
-      .concat(['kiesel', 'feldstein', 'steinmaennchen', 'findling', 'felswaechter', 'bergriese'], ['keimling', 'schwalbe', 'hummel', 'kraehe', 'wirbel', 'tagundnacht', 'steinlawine']) },
-    autumn: { name: 'Herbst-Startdeck', cards: ['fallobst', 'kraehe', 'wildschwein', 'hirsch', 'wirbel', 'laubdecke', 'spaetherbst']
-      .concat(['kiesel', 'feldstein', 'steinmaennchen', 'findling', 'steingolem', 'bergriese'], ['eidechse', 'loewe', 'lauffeuer', 'eismauer', 'ewigeseis', 'steinlawine', 'steinkreis']) },
-    winter: { name: 'Winter-Startdeck', cards: ['eiskristall', 'eismauer', 'mammut', 'winterkoenig', 'ewigeseis', 'dauerfrost', 'schneeschmelze']
-      .concat(['kiesel', 'feldstein', 'steinmaennchen', 'findling', 'felswaechter', 'urgestein'], ['fallobst', 'kraehe', 'wirbel', 'keimling', 'hummel', 'innerewaerme', 'steinlawine']) }
+    spring: { name: 'Frühlings-Startdeck', core: ['keimling', 'schwalbe', 'hummel', 'baer', 'austrieb', 'boden', 'ewigerfruehling',
+      'kiesel', 'feldstein', 'steinmaennchen', 'findling', 'felswaechter', 'steingolem',
+      'eidechse', 'wespe', 'lauffeuer', 'eismauer', 'eiskristall', 'steinkreis', 'steinlawine'], near: ['summer', 'winter'] },
+    summer: { name: 'Sommer-Startdeck', core: ['eidechse', 'wespe', 'loewe', 'drache', 'lauffeuer', 'spaetsommer', 'gleissend',
+      'kiesel', 'feldstein', 'steinmaennchen', 'findling', 'felswaechter', 'bergriese',
+      'keimling', 'schwalbe', 'hummel', 'kraehe', 'wirbel', 'tagundnacht', 'steinlawine'], near: ['spring', 'autumn'] },
+    autumn: { name: 'Herbst-Startdeck', core: ['fallobst', 'kraehe', 'wildschwein', 'hirsch', 'wirbel', 'laubdecke', 'spaetherbst',
+      'kiesel', 'feldstein', 'steinmaennchen', 'findling', 'steingolem', 'bergriese',
+      'eidechse', 'loewe', 'lauffeuer', 'eismauer', 'ewigeseis', 'steinlawine', 'steinkreis'], near: ['summer', 'winter'] },
+    winter: { name: 'Winter-Startdeck', core: ['eiskristall', 'eismauer', 'mammut', 'winterkoenig', 'ewigeseis', 'dauerfrost', 'schneeschmelze',
+      'kiesel', 'feldstein', 'steinmaennchen', 'findling', 'felswaechter', 'urgestein',
+      'fallobst', 'kraehe', 'wirbel', 'keimling', 'hummel', 'innerewaerme', 'steinlawine'], near: ['autumn', 'spring'] },
+    mixed: { name: '4 Jahreszeiten', core: ['keimling', 'eidechse', 'fallobst', 'eiskristall', 'schwalbe', 'wespe', 'kraehe', 'eismauer',
+      'hummel', 'loewe', 'wildschwein', 'mammut', 'baer', 'drache', 'hirsch', 'winterkoenig',
+      'austrieb', 'lauffeuer', 'wirbel', 'ewigeseis'], near: ['spring', 'summer', 'autumn', 'winter'], noAnchors: true }
   };
+  const STARTER_KEYS = ['spring', 'summer', 'autumn', 'winter', 'mixed'];
+  STARTER_KEYS.forEach(function (k) { STARTER_DECKS[k].cards = STARTER_DECKS[k].core; });
+
+  function extrasFor(key) {
+    const sd = STARTER_DECKS[key];
+    const own = key === 'mixed' ? null : key;
+    const rank = function (c) {
+      if (c.season === own) return 0;
+      if (sd.near.indexOf(c.season) >= 0) return 1;
+      if (c.season === 'none' && !c.anchor) return 2;
+      if (c.anchor) return 3;
+      return 4;
+    };
+    return CARDS.filter(function (c) { return sd.core.indexOf(c.id) < 0 && !(sd.noAnchors && c.anchor); })
+      .sort(function (a, b) { return rank(a) - rank(b) || a.cost - b.cost; })
+      .map(function (c) { return c.id; });
+  }
+  function buildStarter(key, size, copies) {
+    const sd = STARTER_DECKS[key];
+    size = size || 20; copies = Math.max(1, copies || 1);
+    const ex = extrasFor(key);
+    const order = sd.core.slice();
+    for (let c = 2; c <= copies; c++) order.push.apply(order, sd.core);
+    order.push.apply(order, ex);
+    for (let c = 2; c <= copies; c++) order.push.apply(order, ex);
+    return order.slice(0, size);
+  }
+  function sameCards(a, b) {
+    if (a.length !== b.length) return false;
+    const x = a.slice().sort(), y = b.slice().sort();
+    for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return false;
+    return true;
+  }
 
   const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
   const SEASON_NAMES = { spring: 'Frühling', summer: 'Sommer', autumn: 'Herbst', winter: 'Winter', none: 'Neutral' };
   const KW_NAMES = { ranged: 'Fernkampf', guard: 'Wächter', tough: 'Zäh', haste: 'Eile', migrant: 'Zugvogel', hibernate: 'Winterschlaf', sacrifice: 'Opfern' };
 
-  const API = { CARDS: CARDS, BY_ID: BY_ID, STARTER_DECKS: STARTER_DECKS, SEASONS: SEASONS, SEASON_NAMES: SEASON_NAMES, KW_NAMES: KW_NAMES };
+  const API = { CARDS: CARDS, BY_ID: BY_ID, STARTER_DECKS: STARTER_DECKS, STARTER_KEYS: STARTER_KEYS, buildStarter: buildStarter, sameCards: sameCards, SEASONS: SEASONS, SEASON_NAMES: SEASON_NAMES, KW_NAMES: KW_NAMES };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.TEMPORA_CARDS = API;
 })(this);

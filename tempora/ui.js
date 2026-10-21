@@ -158,10 +158,11 @@
     for (let k = 0; k < 2; k++) order.forEach(function (x, i) { strip += DECOR.panel(order[(i + 3) % 4], x, order[(i + 1) % 4]); });
     const tiles = DECKS ? DECKS.map(function (d) {
       const lead = leadCard(d);
-      const n = seasonDist(d.cards), tot = d.cards.length || 1;
+      const dc = deckCards(d);
+      const n = seasonDist(dc), tot = dc.length || 1;
       return '<button class="dtile' + (S.myDeck === d.id ? ' on' : '') + '" data-deck="' + d.id + '" aria-pressed="' + (S.myDeck === d.id) + '">' +
         (lead ? mini(cardHTML(lead), 77, 0.55) : '<div style="width:77px;height:112px"></div>') +
-        '<span class="dinfo"><b>' + esc(d.name) + '</b><span>' + d.cards.length + ' / ' + S.deckSize + ' Karten</span>' +
+        '<span class="dinfo"><b>' + esc(d.name) + '</b><span>' + dc.length + ' / ' + S.deckSize + ' Karten' + (isCanonical(d) && (S.deckSize !== 20 || S.copies !== 1) ? ' · an Regeln angepasst' : '') + '</span>' +
         '<span class="dist">' + ['spring', 'summer', 'autumn', 'winter', 'none'].map(function (k) { return '<span style="width:' + (n[k] / tot * 100) + '%;background:' + SC[k].b + '"></span>'; }).join('') + '</span></span></button>';
     }).join('') : '<p class="note">Decks werden geladen …</p>';
     const diff = [['easy', 'Leicht'], ['medium', 'Mittel'], ['hard', 'Schwer']].map(function (x) {
@@ -178,7 +179,7 @@
       '<p class="note" id="mWarn" style="margin:10px 0 0"></p></div>' +
       '<details class="panel glass" id="mOpts"><summary>Testoptionen</summary><div class="opts">' +
       '<div class="group-title">Gegner</div>' +
-      opt('aiDeck', 'Deck des Computers', [['random', 'Zufällig'], ['spring', 'Frühlings-Startdeck'], ['summer', 'Sommer-Startdeck'], ['autumn', 'Herbst-Startdeck'], ['winter', 'Winter-Startdeck']]) +
+      opt('aiDeck', 'Deck des Computers', [['random', 'Zufällig'], ['spring', 'Frühlings-Startdeck'], ['summer', 'Sommer-Startdeck'], ['autumn', 'Herbst-Startdeck'], ['winter', 'Winter-Startdeck'], ['mixed', '4 Jahreszeiten']]) +
       opt('first', 'Wer beginnt', [['random', 'Zufällig'], ['me', 'Du'], ['ai', 'Computer']]) +
       '<div class="group-title">Zeit</div>' +
       opt('startSeason', 'Startjahreszeit', [['spring', 'Frühling'], ['summer', 'Sommer'], ['autumn', 'Herbst'], ['winter', 'Winter'], ['random', 'Zufällig']]) +
@@ -228,7 +229,11 @@
     updateWarn();
   }
   function drawMenuKeepScroll() { const y = window.scrollY; const open = $('#mOpts') && $('#mOpts').open; openMenu(); if (open) $('#mOpts').open = true; window.scrollTo(0, y); }
-  const LEAD = { spring: 'baer', summer: 'drache', autumn: 'hirsch', winter: 'winterkoenig' };
+  const LEAD = { spring: 'baer', summer: 'drache', autumn: 'hirsch', winter: 'winterkoenig', mixed: 'loewe' };
+  /* Unveränderte Startdecks passen sich Deckgröße und Kopien-Regel an */
+  function isCanonical(d) { return !!(d && d.starter_key && C.STARTER_DECKS[d.starter_key] && C.sameCards(d.cards, C.STARTER_DECKS[d.starter_key].core)); }
+  function deckCards(d) { return isCanonical(d) ? C.buildStarter(d.starter_key, S.deckSize, S.copies) : d.cards; }
+  function maxCopies(cards) { const m = {}; let x = 0; cards.forEach(function (id) { m[id] = (m[id] || 0) + 1; x = Math.max(x, m[id]); }); return x; }
   function leadCard(d) {
     if (d.starter_key && LEAD[d.starter_key] && d.cards.indexOf(LEAD[d.starter_key]) >= 0) return LEAD[d.starter_key];
     const units = d.cards.filter(function (id) { return BY_ID[id] && !BY_ID[id].anchor; });
@@ -237,8 +242,10 @@
   }
   function deckProblem(deck) {
     if (!deck) return 'Bitte wähle ein Deck.';
-    if (deck.cards.length !== S.deckSize && !S.allowIncomplete) return 'Dein Deck hat ' + deck.cards.length + ' statt ' + S.deckSize + ' Karten. Ergänze es in der Deckverwaltung oder erlaube unvollständige Decks in den Testoptionen.';
-    if (!deck.cards.length) return 'Dein Deck ist leer.';
+    const cards = deckCards(deck);
+    if (!cards.length) return 'Dein Deck ist leer.';
+    if (cards.length !== S.deckSize && !S.allowIncomplete) return 'Dein Deck hat ' + cards.length + ' statt ' + S.deckSize + ' Karten' + (isCanonical(deck) ? ' (mehr Karten gibt es mit dieser Kopien-Regel nicht)' : '') + '. Passe es in der Deckverwaltung an oder erlaube unvollständige Decks in den Testoptionen.';
+    if (maxCopies(cards) > S.copies && !S.allowIncomplete) return 'Dein Deck enthält Karten mehr als ' + S.copies + '-mal. Passe es an oder ändere „Kopien pro Karte“ in den Testoptionen.';
     return '';
   }
   function updateWarn() {
@@ -276,8 +283,9 @@
       (OFFLINE ? '<div class="banner">Der Server ist nicht erreichbar, Änderungen sind gerade nicht möglich.</div>' : '') +
       '<div class="menu-actions"><button class="btn primary" id="dNew"' + (OFFLINE ? ' disabled' : '') + '>Neues Deck</button><button class="btn" id="dRestore"' + (OFFLINE ? ' disabled' : '') + '>Startdecks wiederherstellen</button></div>' +
       '<div class="decklist">' + DECKS.map(function (d) {
-        const n = seasonDist(d.cards); const tot = d.cards.length || 1;
-        return '<div class="deck"><h3>' + esc(d.name) + '</h3><div class="meta">' + d.cards.length + ' / ' + S.deckSize + ' Karten' + (d.starter_key ? ' · Startdeck' : '') + (S.myDeck === d.id ? ' · gewählt' : '') + '</div>' +
+        const dc = deckCards(d);
+        const n = seasonDist(dc); const tot = dc.length || 1;
+        return '<div class="deck"><h3>' + esc(d.name) + '</h3><div class="meta">' + dc.length + ' / ' + S.deckSize + ' Karten' + (d.starter_key ? ' · Startdeck' : '') + (isCanonical(d) && (S.deckSize !== 20 || S.copies !== 1) ? ' · an Regeln angepasst' : '') + (S.myDeck === d.id ? ' · gewählt' : '') + '</div>' +
           '<div class="dist">' + ['spring', 'summer', 'autumn', 'winter', 'none'].map(function (k) { return '<span style="width:' + (n[k] / tot * 100) + '%;background:' + SC[k].b + '"></span>'; }).join('') + '</div>' +
           '<div class="acts"><button class="btn small" data-a="edit" data-id="' + d.id + '"' + (OFFLINE ? ' disabled' : '') + '>Bearbeiten</button><button class="btn small" data-a="pick" data-id="' + d.id + '">Wählen</button><button class="btn small" data-a="dup" data-id="' + d.id + '"' + (OFFLINE ? ' disabled' : '') + '>Duplizieren</button><button class="btn small" data-a="ren" data-id="' + d.id + '"' + (OFFLINE ? ' disabled' : '') + '>Umbenennen</button><button class="btn small danger" data-a="del" data-id="' + d.id + '"' + (OFFLINE ? ' disabled' : '') + '>Löschen</button></div></div>';
       }).join('') + '</div></div>';
@@ -389,11 +397,8 @@
   function shuffleArr(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
   function aiDeckCards() {
     let k = S.aiDeck;
-    if (C.SEASONS.indexOf(k) < 0) k = C.SEASONS[Math.floor(Math.random() * 4)];
-    let cards = C.STARTER_DECKS[k].cards.slice();
-    if (S.deckSize < cards.length) cards = shuffleArr(cards).slice(0, S.deckSize);
-    while (cards.length < S.deckSize) cards.push(cards[cards.length % C.STARTER_DECKS[k].cards.length]);
-    return { key: k, cards: cards };
+    if (C.STARTER_KEYS.indexOf(k) < 0) k = C.STARTER_KEYS[Math.floor(Math.random() * C.STARTER_KEYS.length)];
+    return { key: k, cards: C.buildStarter(k, S.deckSize, S.copies) };
   }
   function startGame() {
     const deck = deckById(S.myDeck);
@@ -404,8 +409,8 @@
     const cfg = { life: S.life, deckSize: S.deckSize, startHand: S.startHand, handLimit: S.handLimit, fieldMode: S.fieldMode, growAt: S.growAt,
       startSeason: S.startSeason, overwriteHolder: S.overwriteHolder, compensation: S.compensation, damageStays: S.damageStays, weathering: S.weathering, openAttack: S.openAttack, lateDamage: S.lateDamage, emptyDeck: S.emptyDeck, emptyDeckAmount: S.emptyDeckAmount, reshufflePenalty: S.reshufflePenalty, emptyOnlyMain: S.emptyOnlyMain };
     const first = S.first === 'me' ? 0 : S.first === 'ai' ? 1 : undefined;
-    const state = E.newGame(cfg, [deck.cards, ai.cards], { first: first, names: ['Du', 'Computer'] });
-    G = { state: state, sel: null, pending: null, busy: false, seen: 0, aiDeck: ai.key, toast: '', played: [[], []], startedAt: Date.now(), deckName: deck.name, deckCards: deck.cards.slice(), recorded: false };
+    const state = E.newGame(cfg, [deckCards(deck), ai.cards], { first: first, names: ['Du', 'Computer'] });
+    G = { state: state, sel: null, pending: null, busy: false, seen: 0, aiDeck: ai.key, toast: '', played: [[], []], startedAt: Date.now(), deckName: deck.name, deckCards: deckCards(deck).slice(), recorded: false };
     show('game'); fit();
     G.seen = state.log.length;
     toast(state.log.map(function (l) { return l.text; }).join(' · '));

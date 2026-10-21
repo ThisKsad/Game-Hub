@@ -41,3 +41,7 @@ create policy "anyone can change" on public.jahreskreis_decks for update to anon
 create policy "anyone can delete" on public.jahreskreis_decks for delete to anon using (true);
 
 insert into public.jahreskreis_players(name) values ('lukas');
+
+-- Fünftes Startdeck „4 Jahreszeiten“
+alter table public.jahreskreis_decks drop constraint if exists jahreskreis_decks_starter_key_check;
+alter table public.jahreskreis_decks add constraint jahreskreis_decks_starter_key_check check (starter_key in ('spring','summer','autumn','winter','mixed'));

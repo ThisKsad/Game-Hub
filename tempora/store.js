@@ -41,7 +41,7 @@
   function seedStarters(owner, existing, only) {
     const have = {};
     (existing || []).forEach(function (d) { if (d.starter_key) have[d.starter_key] = true; });
-    const keys = (only || C.SEASONS).filter(function (k) { return !have[k]; });
+    const keys = (only || C.STARTER_KEYS).filter(function (k) { return !have[k]; });
     return keys.reduce(function (pr, k) {
       return pr.then(function () { return createDeck(owner, C.STARTER_DECKS[k].name, C.STARTER_DECKS[k].cards, k); });
     }, Promise.resolve());
@@ -55,17 +55,24 @@
       try { seeded = localStorage.getItem(flag) === '1'; } catch (e) {}
       if (!decks.length && !seeded) {
         return seedStarters(owner, []).then(function () {
-          try { localStorage.setItem(flag, '1'); } catch (e) {}
+          try { localStorage.setItem(flag, '1'); localStorage.setItem('tempora-starters-' + owner, JSON.stringify(C.STARTER_KEYS)); } catch (e) {}
           return listDecks(owner);
         });
       }
       try { localStorage.setItem(flag, '1'); } catch (e) {}
+      /* Neue Startdecks (z. B. „4 Jahreszeiten“) einmalig auch bestehenden Spielern hinzufügen */
+      const kflag = 'tempora-starters-' + owner;
+      let known = [];
+      try { known = JSON.parse(localStorage.getItem(kflag)) || ['spring', 'summer', 'autumn', 'winter']; } catch (e) { known = ['spring', 'summer', 'autumn', 'winter']; }
+      const fresh = C.STARTER_KEYS.filter(function (k) { return known.indexOf(k) < 0; });
+      try { localStorage.setItem(kflag, JSON.stringify(C.STARTER_KEYS)); } catch (e) {}
+      if (fresh.length) return seedStarters(owner, decks, fresh).then(function () { return listDecks(owner); });
       return decks;
     });
   }
   /* Ersatz, falls der Server nicht erreichbar ist: nur die Startdecks, nicht speicherbar. */
   function offlineDecks() {
-    return C.SEASONS.map(function (k) { return { id: 'local-' + k, name: C.STARTER_DECKS[k].name, cards: C.STARTER_DECKS[k].cards.slice(), starter_key: k, offline: true }; });
+    return C.STARTER_KEYS.map(function (k) { return { id: 'local-' + k, name: C.STARTER_DECKS[k].name, cards: C.STARTER_DECKS[k].cards.slice(), starter_key: k, offline: true }; });
   }
 
   /* Statistik beendeter Partien. Klappt das Speichern nicht, wird die Partie lokal vorgemerkt und später nachgereicht. */
