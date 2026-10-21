@@ -516,7 +516,7 @@
 
     const HAND_W = 820, CW = 112;
     const n = me.hand.length;
-    const step = n > 1 ? Math.min(CW + 12, (HAND_W - CW) / (n - 1)) : 0;
+    const step = n > 1 ? Math.min(CW * 0.8, (HAND_W - CW) / (n - 1)) : 0; // Karten überlappen sich um 2/10
     const span = n ? CW + step * (n - 1) : 0;
     const startX = (HAND_W - span) / 2;
     const hand = '<div class="handfan" style="width:' + HAND_W + 'px">' + me.hand.map(function (c, h) {
