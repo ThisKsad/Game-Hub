@@ -122,5 +122,17 @@
     return '<div class="bgpanel" style="background:linear-gradient(90deg,' + l + ' 0%,' + COLOR[cur] + ' 14%,' + COLOR[cur] + ' 86%,' + r + ' 100%)">' +
       '<svg viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g>' + SIDE[cur] + '</g><g transform="translate(1280 0) scale(-1 1)">' + SIDE[cur] + '</g><g>' + FRAME[cur] + '</g></svg></div>';
   }
-  root.TEMPORA_DECOR = { svg: svg, background: background, panel: panel, COLOR: COLOR };
+  /* Spielfeld-Hintergrund als laufendes Band: ein Abschnitt (980 px breit) pro Jahreszeit. */
+  const SEG = 980, SEG_X = 150;
+  function track(seasons, nowIndex) {
+    let h = '';
+    seasons.forEach(function (cur, i) {
+      const prev = seasons[i - 1] || cur, next = seasons[i + 1] || cur;
+      const l = mix(COLOR[prev], COLOR[cur]), r = mix(COLOR[cur], COLOR[next]);
+      h += '<div class="seg" style="left:' + (SEG_X + (i - nowIndex) * SEG) + 'px;background:linear-gradient(90deg,' + l + ' 0%,' + COLOR[cur] + ' 9%,' + COLOR[cur] + ' 91%,' + r + ' 100%)">' +
+        '<svg width="' + SEG + '" height="720" viewBox="150 0 980 720" style="left:2px" aria-hidden="true">' + (FRAME[cur] || '') + '</svg></div>';
+    });
+    return h;
+  }
+  root.TEMPORA_DECOR = { svg: svg, background: background, panel: panel, track: track, SEG: SEG, COLOR: COLOR };
 })(this);

@@ -68,5 +68,18 @@
     return C.SEASONS.map(function (k) { return { id: 'local-' + k, name: C.STARTER_DECKS[k].name, cards: C.STARTER_DECKS[k].cards.slice(), starter_key: k, offline: true }; });
   }
 
-  root.TEMPORA_STORE = { loadDecks: loadDecks, createDeck: createDeck, updateDeck: updateDeck, deleteDeck: deleteDeck, seedStarters: seedStarters, offlineDecks: offlineDecks };
+  /* Statistik beendeter Partien. Klappt das Speichern nicht, wird die Partie lokal vorgemerkt und später nachgereicht. */
+  const QUEUE = 'tempora-pending-games';
+  function readQueue() { try { return JSON.parse(localStorage.getItem(QUEUE)) || []; } catch (e) { return []; } }
+  function writeQueue(q) { try { localStorage.setItem(QUEUE, JSON.stringify(q.slice(-50))); } catch (e) {} }
+  function saveGame(row) {
+    return req('jahreskreis_games', { method: 'POST', prefer: 'return=minimal', body: [row] })
+      .catch(function (err) { const q = readQueue(); q.push(row); writeQueue(q); throw err; });
+  }
+  function flushGames() {
+    const q = readQueue();
+    if (!q.length) return Promise.resolve();
+    return req('jahreskreis_games', { method: 'POST', prefer: 'return=minimal', body: q }).then(function () { writeQueue([]); }).catch(function () {});
+  }
+  root.TEMPORA_STORE = { saveGame: saveGame, flushGames: flushGames, loadDecks: loadDecks, createDeck: createDeck, updateDeck: updateDeck, deleteDeck: deleteDeck, seedStarters: seedStarters, offlineDecks: offlineDecks };
 })(this);

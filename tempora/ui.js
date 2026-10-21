@@ -136,7 +136,7 @@
   /* ---------- Decks laden ---------- */
   let DECKS = null, OFFLINE = false;
   function loadDecks() {
-    return STORE.loadDecks(S.player).then(function (d) { DECKS = d; OFFLINE = false; })
+    return STORE.loadDecks(S.player).then(function (d) { DECKS = d; OFFLINE = false; STORE.flushGames(); })
       .catch(function (err) { console.warn(err); DECKS = STORE.offlineDecks(); OFFLINE = true; });
   }
   function deckById(id) { return (DECKS || []).filter(function (d) { return d.id === id; })[0]; }
@@ -399,7 +399,7 @@
       startSeason: S.startSeason, overwriteHolder: S.overwriteHolder, compensation: S.compensation };
     const first = S.first === 'me' ? 0 : S.first === 'ai' ? 1 : undefined;
     const state = E.newGame(cfg, [deck.cards, ai.cards], { first: first, names: ['Du', 'Computer'] });
-    G = { state: state, sel: null, pending: null, busy: false, seen: 0, aiDeck: ai.key, toast: '' };
+    G = { state: state, sel: null, pending: null, busy: false, seen: 0, aiDeck: ai.key, toast: '', played: [[], []], startedAt: Date.now(), deckName: deck.name, deckCards: deck.cards.slice(), recorded: false };
     show('game'); fit();
     G.seen = state.log.length;
     toast(state.log.map(function (l) { return l.text; }).join(' · '));
@@ -565,9 +565,16 @@
     }).join('') + '</div>';
 
     const ctl = controls();
-    stage.style.background = DECOR.background(prev, st.season, next);
-    stage.innerHTML = DECOR.svg(prev, st.season, next) +
-      '<div class="watermark">' + SN[st.season] + '</div>' +
+    /* Hintergrund-Band: 2 Jahreszeiten zurück, aktuelle, 2 voraus */
+    const segs = [];
+    for (let k = -2; k <= 2; k++) {
+      const e = band[nowI + k];
+      segs.push(e ? e.season : CY[(CY.indexOf(st.season) + 4 + k) % 4]);
+    }
+    if (nowI - 1 >= 0 && nowI - 2 < 0) segs[0] = CY[(CY.indexOf(segs[1]) + 3) % 4];
+    stage.style.background = '#2E2C29';
+    stage.innerHTML = '<div class="bgtrack' + (G.fx && G.fx.band ? ' slide' : '') + '">' + DECOR.track(segs, 2) + '</div><div class="bgshade"></div>' +
+      '<div class="watermark' + (G.fx && G.fx.band ? ' wmin' : '') + '">' + SN[st.season] + '</div>' +
       '<div class="topbtns"><button class="iconbtn" data-k="btn:menu" aria-label="Zum Menü">' + ICON.door + '</button><button class="iconbtn" data-k="btn:log" aria-label="Verlauf">' + ICON.list + '</button><button class="iconbtn" data-k="btn:rules" aria-label="Regeln">' + ICON.book + '</button></div>' +
       '<div class="layer">' +
       '<div class="opp-hand">' + op.hand.map(function (c, i) { return '<div class="' + (G.fx && G.fx.oppDraw && i >= op.hand.length - G.fx.oppDraw ? 'odrawn' : '') + '">' + mini(backHTML(), 36, 0.2572) + '</div>'; }).join('') + '<span style="margin-left:8px">Gegner: ' + op.hand.length + ' Handkarten</span></div>' +
@@ -706,9 +713,27 @@
       await wait(250 * m);
     }
   }
+  function recordGame() {
+    if (!G || G.recorded || G.state.winner === null) return;
+    G.recorded = true;
+    const st = G.state;
+    const row = {
+      player: S.player, result: st.winner === 0 ? 'win' : st.winner === 1 ? 'loss' : 'tie',
+      rounds: st.round, year: st.year, end_season: st.season, went_first: st.first === 0, difficulty: S.difficulty,
+      my_deck_name: G.deckName, my_deck_cards: G.deckCards, ai_deck: G.aiDeck,
+      my_life: st.players[0].life, ai_life: st.players[1].life,
+      my_cards_played: G.played[0], ai_cards_played: G.played[1],
+      duration_seconds: Math.round((Date.now() - G.startedAt) / 1000),
+      settings: { life: S.life, deckSize: S.deckSize, startHand: S.startHand, handLimit: S.handLimit, copies: S.copies, fieldMode: S.fieldMode, growAt: S.growAt,
+        startSeason: S.startSeason, mulligan: S.mulligan, overwriteHolder: S.overwriteHolder, compensation: S.compensation, allowIncomplete: S.allowIncomplete },
+      version: 'proto-1'
+    };
+    STORE.saveGame(row).catch(function (e) { console.warn('Statistik wird später gespeichert', e); });
+  }
   async function animateAct(a) {
     const m = speed();
     G.busy = true;
+    if (a.t === 'play') { const c = G.state.players[G.state.current].hand[a.h]; if (c) G.played[G.state.current].push(c.id); }
     await preAnim(a, m);
     const before = snapshot();
     E.apply(G.state, a);
@@ -789,6 +814,7 @@
   }
   function gameOver() {
     if (!G) return;
+    recordGame();
     G.showEnd = true;
     render();
   }

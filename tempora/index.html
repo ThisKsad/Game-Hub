@@ -144,6 +144,14 @@ details[open].panel>summary::after{content:"▴"}
 #game{position:fixed; inset:0; background:#151413; overflow:hidden}
 #stage{position:absolute; left:0; top:0; width:1280px; height:720px; transform-origin:0 0; overflow:hidden}
 .decor{position:absolute; left:0; top:0; pointer-events:none}
+.bgtrack{position:absolute; left:0; top:0; width:1280px; height:720px; pointer-events:none}
+.bgtrack .seg{position:absolute; top:0; width:984px; margin-left:-2px; height:720px}
+.bgtrack .seg svg{position:absolute; left:0; top:0}
+.bgtrack.slide{animation:trackslide 1.3s cubic-bezier(.45,0,.25,1)}
+@keyframes trackslide{from{translate:980px 0}}
+.bgshade{position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse 58% 52% at 50% 50%, rgba(30,27,24,0.72) 0%, rgba(30,27,24,0.5) 55%, rgba(30,27,24,0) 92%)}
+.watermark.wmin{animation:wmin 1.3s ease}
+@keyframes wmin{0%{opacity:0} 60%{opacity:0} 100%{opacity:.08}}
 .watermark{position:absolute; left:0; right:0; top:250px; text-align:center; font-family:var(--display); font-size:170px; letter-spacing:12px; color:#fff; opacity:.08; pointer-events:none}
 .layer{position:absolute; inset:0; padding:10px 16px 0; display:flex; flex-direction:column; gap:8px}
 .opp-hand{height:56px; display:flex; justify-content:center; align-items:center; gap:6px; font-size:14px}
