@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="felt" cx="50%" cy="40%" r="75%">
+      <stop offset="0" stop-color="#2a5f4b"/><stop offset="1" stop-color="#143428"/>
+    </radialGradient>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="7" flood-color="#000" flood-opacity=".35"/></filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#felt)"/>
+  <g filter="url(#sh)">
+    <!-- oben links: Karte (Scopa) -->
+    <rect x="92" y="92" width="152" height="152" rx="30" fill="#8c2c2a"/>
+    <g transform="rotate(-8 168 168)">
+      <rect x="132" y="113" width="72" height="110" rx="10" fill="#f6efdf"/>
+      <circle cx="168" cy="168" r="21" fill="#b8860b" stroke="#6b4e0a" stroke-width="4"/>
+      <circle cx="168" cy="168" r="11" fill="none" stroke="#f3e2a8" stroke-width="4"/>
+    </g>
+    <!-- oben rechts: Jahreszeitenrad (Tempora) -->
+    <rect x="268" y="92" width="152" height="152" rx="30" fill="#f6efdf"/>
+    <g transform="translate(344 168)">
+      <path d="M0 0V-50A50 50 0 0 1 50 0Z" fill="#9A6A0E"/>
+      <path d="M0 0H50A50 50 0 0 1 0 50Z" fill="#A34A22"/>
+      <path d="M0 0V50A50 50 0 0 1 -50 0Z" fill="#3E6A92"/>
+      <path d="M0 0H-50A50 50 0 0 1 0 -50Z" fill="#4E7A3C"/>
+      <circle r="12" fill="#f6efdf"/>
+    </g>
+    <!-- unten links: 2D (Plattform + Figur) -->
+    <rect x="92" y="268" width="152" height="152" rx="30" fill="#d6ac55"/>
+    <g fill="#173a2c">
+      <rect x="116" y="372" width="104" height="18" rx="4"/>
+      <rect x="132" y="322" width="26" height="42" rx="6"/>
+      <rect x="176" y="338" width="34" height="12" rx="4"/>
+      <circle cx="193" cy="306" r="9"/>
+    </g>
+    <!-- unten rechts: 3D-Würfel -->
+    <rect x="268" y="268" width="152" height="152" rx="30" fill="#173a2c" stroke="#d6ac55" stroke-width="6"/>
+    <g transform="translate(344 344)" stroke="#d6ac55" stroke-width="9" stroke-linejoin="round" fill="none">
+      <path d="M0 -48L42 -24V24L0 48L-42 24V-24Z" fill="rgba(214,172,85,.15)"/>
+      <path d="M-42 -24L0 0L42 -24M0 0V48"/>
+    </g>
+  </g>
+</svg>
