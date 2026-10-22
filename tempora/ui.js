@@ -508,11 +508,11 @@
     const next = band[nowI + 1] ? band[nowI + 1].season : CY[(CY.indexOf(st.season) + 1) % 4];
     const tk = targetKeys();
     const legalNow = legal();
-    const canUids = {};
+    const canAtk = {}, canMove = {};
     legalNow.forEach(function (a) {
       if (a.a == null) return;
-      if (a.t === 'attack') canUids[a.a] = 'atk';
-      else if ((a.t === 'sacrifice' || a.t === 'move') && !canUids[a.a]) canUids[a.a] = 'other';
+      if (a.t === 'attack') canAtk[a.a] = true;
+      else if (a.t === 'move') canMove[a.a] = true;
     });
     const affordable = {};
     legalNow.forEach(function (a) { if (a.t === 'play') affordable[a.h] = true; });
@@ -540,7 +540,8 @@
         if (sl && sl.u) {
           if (G.fx && G.fx.enter && G.fx.enter[sl.u.uid]) cls += ' enter-' + G.fx.enter[sl.u.uid];
           if (G.sel && G.sel.unit === sl.u.uid) cls += ' sel';
-          else if (p === 0 && canUids[sl.u.uid] && !tk[key]) cls += canUids[sl.u.uid] === 'atk' ? ' can' : ' canother';
+          else if (p === 0 && canAtk[sl.u.uid] && !tk[key]) cls += ' can';
+          if (p === 0 && canMove[sl.u.uid] && !tk[key]) cls += ' float';
           inner = '<div class="sc">' + cardHTML(sl.u.id, unitView(st, sl.u, s)) + '</div>';
         } else if (sl && sl.holder) {
           inner = '<div class="holder"><svg width="34" height="22" viewBox="0 0 24 12" aria-hidden="true"><path d="M1 6 Q12 -4 23 6 Q12 16 1 6 Z" fill="#E2A13A"/><path d="M1 6 L23 6" stroke="#7A3F22" stroke-width="1"/></svg><b>' + esc(BY_ID[sl.holder.id].name) + '</b><span>' + (sl.full ? 'kehrt voll zurück' : 'kehrt im Frühling zurück') + '</span></div>';
