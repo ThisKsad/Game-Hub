@@ -541,7 +541,7 @@
           if (G.fx && G.fx.enter && G.fx.enter[sl.u.uid]) cls += ' enter-' + G.fx.enter[sl.u.uid];
           if (G.sel && G.sel.unit === sl.u.uid) cls += ' sel';
           else if (p === 0 && canAtk[sl.u.uid] && !tk[key]) cls += ' can';
-          if (p === 0 && canMove[sl.u.uid] && !tk[key]) cls += ' float';
+          if (p === 0 && canMove[sl.u.uid] && !tk[key]) cls += ' drift';
           inner = '<div class="sc">' + cardHTML(sl.u.id, unitView(st, sl.u, s)) + '</div>';
         } else if (sl && sl.holder) {
           inner = '<div class="holder"><svg width="34" height="22" viewBox="0 0 24 12" aria-hidden="true"><path d="M1 6 Q12 -4 23 6 Q12 16 1 6 Z" fill="#E2A13A"/><path d="M1 6 L23 6" stroke="#7A3F22" stroke-width="1"/></svg><b>' + esc(BY_ID[sl.holder.id].name) + '</b><span>' + (sl.full ? 'kehrt voll zurück' : 'kehrt im Frühling zurück') + '</span></div>';

@@ -208,14 +208,18 @@ details[open].panel>summary::after{content:"▴"}
 @keyframes canpulse{50%{box-shadow:0 0 0 4px #F2C94C, 0 0 8px rgba(242,201,76,.4)}}
 @media (prefers-reduced-motion:reduce){.can{animation:none}}
 /* Einheiten, die sich noch bewegen dürfen, schweben leicht über dem Feld */
-.slot.float{animation:floaty 2.6s ease-in-out infinite, floatrot 3.7s ease-in-out infinite}
-.slot.can.float{animation:canpulse 1.8s ease-in-out infinite, floaty 2.6s ease-in-out infinite, floatrot 3.7s ease-in-out infinite}
-.slot.can.float:nth-child(even){animation-delay:0s, -1.3s, -2.1s}
-.slot.float:nth-child(even):not(.can){animation-delay:-1.3s, -2.1s}
-@keyframes floatrot{0%,100%{rotate:-1.2deg}50%{rotate:1.2deg}}
-.slot.float .sc{filter:drop-shadow(0 12px 7px rgba(0,0,0,.5))}
+.slot.drift{animation:floaty 2.6s ease-in-out infinite}
+.slot.can.drift{animation:canpulse 1.8s ease-in-out infinite, floaty 2.6s ease-in-out infinite}
+.slot.drift:nth-child(even):not(.can){animation-delay:-1.3s}
+.slot.can.drift:nth-child(even){animation-delay:0s, -1.3s}
+.slot.drift .sc{filter:drop-shadow(0 12px 7px rgba(0,0,0,.5)); animation:floatrot 3.7s ease-in-out infinite}
+.slot.drift:nth-child(even) .sc{animation-delay:-2.1s}
+/* Unter der Maus bzw. ausgewählt: Karte steht still und gerade, damit die Schrift scharf ist */
+.slot.drift:hover,.slot.drift.sel{animation-play-state:paused}
+.slot.drift:hover .sc,.slot.drift.sel .sc{animation:none; rotate:0deg}
+@keyframes floatrot{0%,100%{rotate:-.5deg}50%{rotate:.5deg}}
 @keyframes floaty{0%,100%{translate:0 -3px}50%{translate:0 -8px}}
-@media (prefers-reduced-motion:reduce){.slot.float,.slot.can.float{animation:none; translate:0 -5px; rotate:0deg}}
+@media (prefers-reduced-motion:reduce){.slot.drift,.slot.can.drift,.slot.drift .sc{animation:none; rotate:0deg}.slot.drift{translate:0 -5px}}
 .side-actions{position:absolute; right:0; top:0; width:200px; display:flex; flex-direction:column; gap:10px; align-items:stretch}
 .seasonfx{position:absolute; left:16px; bottom:10px; width:190px; z-index:3; background:rgba(20,19,17,.78); border-radius:12px; border-left:5px solid var(--sc); padding:8px 10px; font-size:12px; line-height:1.3; color:#E9E6E0; pointer-events:none}
 .seasonfx .sfh{display:flex; align-items:center; gap:6px; font-family:var(--display); font-size:16px; color:#fff; margin-bottom:4px}
@@ -351,12 +355,12 @@ details[open].panel>summary::after{content:"▴"}
 </div>
 <div id="modal" class="modal" hidden></div>
 
-<script src="cards.js?v=202610222037"></script>
-<script src="art.js?v=202610222037"></script>
-<script src="engine.js?v=202610222037"></script>
-<script src="ai.js?v=202610222037"></script>
-<script src="decor.js?v=202610222037"></script>
-<script src="store.js?v=202610222037"></script>
-<script src="ui.js?v=202610222037"></script>
+<script src="cards.js?v=202610222051"></script>
+<script src="art.js?v=202610222051"></script>
+<script src="engine.js?v=202610222051"></script>
+<script src="ai.js?v=202610222051"></script>
+<script src="decor.js?v=202610222051"></script>
+<script src="store.js?v=202610222051"></script>
+<script src="ui.js?v=202610222051"></script>
 </body>
 </html>
