@@ -53,6 +53,78 @@ function starG(x, y, k, fill = '#d6ac55') {
   for (let i = 0; i < 10; i++) { const r = i % 2 ? 4.2 : 10, a = -Math.PI / 2 + i * Math.PI / 5; pts.push((Math.cos(a) * r).toFixed(2) + ',' + (Math.sin(a) * r).toFixed(2)); }
   return `<g transform="translate(${x},${y}) scale(${k})"><polygon points="${pts.join(' ')}" fill="${fill}" stroke="#8c2c2a" stroke-width="1.2" stroke-linejoin="round"/></g>`;
 }
+/* court cards: a classic double-ended picture – the upper half of the figure, mirrored below */
+const SKIN = '#f2d3ae', SKIN_D = '#c99a73', GOLD = '#d9a93a', GOLD_D = '#8a6412', INK = '#2b2218', IVORY = '#fffdf7', STEEL = '#c9ced6';
+function courtHalf(c) {
+  const red = c.s === 'H' || c.s === 'D';
+  const main = red ? '#b3261e' : '#2b3a5c', alt = red ? '#2b3a5c' : '#b3261e', hair = red ? '#6b4423' : '#3b2a1c';
+  const pipX = c.r === 13 ? 19.6 : 40.4;
+  const face = (cy, r) => `<circle cx="30" cy="${cy}" r="${r}" fill="${SKIN}" stroke="${SKIN_D}" stroke-width=".4"/>
+    <circle cx="28.2" cy="${cy - .4}" r=".55" fill="${INK}"/><circle cx="31.8" cy="${cy - .4}" r=".55" fill="${INK}"/>`;
+  let g = '';
+  if (c.r === 13) { // king: crown, beard, ermine, sword
+    g = `<rect x="39.4" y="11" width="1.6" height="22" fill="${STEEL}" stroke="#8b919b" stroke-width=".4"/><path d="M39.4,11 L40.2,8.8 L41,11z" fill="${STEEL}" stroke="#8b919b" stroke-width=".4"/>
+      <path d="M15,44 V37 Q17,30.5 24,29.5 H36 Q43,30.5 45,37 V44z" fill="${main}"/>
+      <path d="M15,44 V40 Q22,37 30,37 Q38,37 45,40 V44z" fill="${alt}" opacity=".9"/>
+      <rect x="28.4" y="31" width="3.2" height="13" fill="${GOLD}" stroke="${GOLD_D}" stroke-width=".3"/>
+      <circle cx="30" cy="34.5" r=".8" fill="${alt}"/><circle cx="30" cy="38.5" r=".8" fill="${alt}"/><circle cx="30" cy="42.5" r=".8" fill="${alt}"/>
+      <path d="M21.5,29.6 Q30,34.5 38.5,29.6 L38.5,32.4 Q30,37.4 21.5,32.4z" fill="${IVORY}" stroke="#bdb39c" stroke-width=".3"/>
+      <g fill="${INK}"><circle cx="24.5" cy="31.6" r=".45"/><circle cx="27.5" cy="33" r=".45"/><circle cx="32.5" cy="33" r=".45"/><circle cx="35.5" cy="31.6" r=".45"/></g>
+      ${face(21.6, 4.9)}
+      <path d="M25.1,22 Q24.8,29.8 30,30.6 Q35.2,29.8 34.9,22 Q33.4,25.8 30,25.9 Q26.6,25.8 25.1,22z" fill="${hair}"/>
+      <path d="M27.6,24.4 Q30,23.4 32.4,24.4" stroke="${hair}" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+      <path d="M24.4,18.4 L23.8,10.6 L26.9,13.8 L30,9.2 L33.1,13.8 L36.2,10.6 L35.6,18.4z" fill="${GOLD}" stroke="${GOLD_D}" stroke-width=".5" stroke-linejoin="round"/>
+      <rect x="24.4" y="16.4" width="11.2" height="2" fill="${GOLD}" stroke="${GOLD_D}" stroke-width=".4"/>
+      <circle cx="30" cy="14.2" r="1" fill="${alt}"/><circle cx="26.5" cy="17.4" r=".55" fill="${alt}"/><circle cx="33.5" cy="17.4" r=".55" fill="${alt}"/>
+      <rect x="37.2" y="32.4" width="6" height="1.4" rx=".5" fill="${GOLD}" stroke="${GOLD_D}" stroke-width=".3"/>
+      <circle cx="40.2" cy="35.6" r="1.7" fill="${SKIN}" stroke="${SKIN_D}" stroke-width=".4"/>`;
+  } else if (c.r === 12) { // queen: long hair, tiara, necklace, flower
+    g = `<path d="M23.6,21 Q22.4,31 19.6,35 Q25,33.5 26,30 L34,30 Q35,33.5 40.4,35 Q37.6,31 36.4,21 Q36,13.6 30,13.6 Q24,13.6 23.6,21z" fill="${hair}"/>
+      <path d="M15,44 V37.5 Q17.5,31.5 24,30.5 L30,36.5 L36,30.5 Q42.5,31.5 45,37.5 V44z" fill="${main}"/>
+      <path d="M24,30.5 L30,36.5 L36,30.5 L34.4,30.1 L30,34.4 L25.6,30.1z" fill="${GOLD}"/>
+      <path d="M26.2,29.6 L30,34 L33.8,29.6z" fill="${SKIN}"/>
+      <path d="M15,44 V41 Q22,38.6 30,38.6 Q38,38.6 45,41 V44z" fill="${alt}" opacity=".9"/>
+      <path d="M22,44 Q30,40.4 38,44" stroke="${GOLD}" stroke-width="1" fill="none"/>
+      <rect x="28.5" y="26" width="3" height="4.5" fill="${SKIN}"/>
+      ${face(21.8, 4.6)}
+      <path d="M28.8,24.6 Q30,25.4 31.2,24.6" stroke="#a5322a" stroke-width=".7" fill="none" stroke-linecap="round"/>
+      <path d="M25.4,19.6 Q26,15.4 30,15.2 Q34,15.4 34.6,19.6 Q32.6,17.6 30,17.6 Q27.4,17.6 25.4,19.6z" fill="${hair}"/>
+      <path d="M25.4,16.4 L26,12.6 L28,14.6 L30,11.4 L32,14.6 L34,12.6 L34.6,16.4z" fill="${GOLD}" stroke="${GOLD_D}" stroke-width=".45" stroke-linejoin="round"/>
+      <circle cx="30" cy="13.8" r=".75" fill="${alt}"/>
+      <path d="M27,31.2 Q30,33.6 33,31.2" stroke="${GOLD}" stroke-width=".6" fill="none"/><circle cx="30" cy="33" r=".75" fill="${alt}"/>
+      <path d="M20.2,37 Q19.4,31 20.6,25.6" stroke="#3d7a3a" stroke-width=".9" fill="none"/>
+      <path d="M20.4,30 Q18.2,29 18,27.4 Q20,27.8 20.4,30z" fill="#3d7a3a"/>
+      <g fill="${red ? '#e07a8a' : '#c0392b'}"><circle cx="20.6" cy="23.6" r="1.4"/><circle cx="19" cy="25" r="1.4"/><circle cx="22.2" cy="25" r="1.4"/><circle cx="19.6" cy="26.6" r="1.4"/><circle cx="21.6" cy="26.6" r="1.4"/></g>
+      <circle cx="20.6" cy="25.4" r=".9" fill="${GOLD}"/>
+      <circle cx="20.4" cy="37.6" r="1.6" fill="${SKIN}" stroke="${SKIN_D}" stroke-width=".4"/>`;
+  } else { // jack: feathered cap, ruff collar, striped tunic, halberd
+    g = `<rect x="19.6" y="12" width="1.3" height="32" fill="#7a5230"/>
+      <path d="M20.25,8.6 L23.6,12.4 L20.25,15.6 L16.9,12.4z" fill="${STEEL}" stroke="#8b919b" stroke-width=".4"/>
+      <path d="M15,44 V37.5 Q17,31.6 24,30.6 H36 Q43,31.6 45,37.5 V44z" fill="${main}"/>
+      <g fill="${GOLD}" opacity=".95"><rect x="23.5" y="32" width="1.6" height="12"/><rect x="29.2" y="33" width="1.6" height="11"/><rect x="34.9" y="32" width="1.6" height="12"/></g>
+      <rect x="28.5" y="26" width="3" height="4" fill="${SKIN}"/>
+      <ellipse cx="30" cy="30.4" rx="7.4" ry="2.4" fill="${IVORY}" stroke="#bdb39c" stroke-width=".4"/>
+      <path d="M23.4,30.4 Q25,32 26.6,30.4 Q28.3,32 30,30.4 Q31.7,32 33.4,30.4 Q35,32 36.6,30.4" stroke="#bdb39c" stroke-width=".35" fill="none"/>
+      <path d="M25,20 Q24.6,26 26.4,27 L26.6,21z M35,20 Q35.4,26 33.6,27 L33.4,21z" fill="${hair}"/>
+      ${face(22, 4.6)}
+      <path d="M28.6,25 Q30,25.6 31.4,25" stroke="${SKIN_D}" stroke-width=".6" fill="none" stroke-linecap="round"/>
+      <path d="M24.6,19.6 Q23.8,12.8 30.6,12.6 Q37.4,12.8 36.4,19.2 Q30,17.2 24.6,19.6z" fill="${alt}"/>
+      <path d="M24.6,19.6 Q30,17.2 36.4,19.2 L36.6,20.4 Q30,18.6 24.4,20.8z" fill="${GOLD}"/>
+      <path d="M34.6,14.6 Q39.6,10.8 42.6,9.2 Q40.4,13 35.6,16.2z" fill="${GOLD}" stroke="${GOLD_D}" stroke-width=".35"/>
+      <circle cx="20.25" cy="36.4" r="1.7" fill="${SKIN}" stroke="${SKIN_D}" stroke-width=".4"/>`;
+  }
+  return g + suitG(c.s, pipX, 13.2, .5);
+}
+function courtSVG(c) {
+  const red = c.s === 'H' || c.s === 'D', main = red ? '#b3261e' : '#2b3a5c';
+  const half = courtHalf(c);
+  // scaled a little so the corner indices stay outside the picture frame
+  return `<g transform="translate(30 44) scale(.87) translate(-30 -44)"><rect x="15" y="7.5" width="30" height="73" rx="1.5" fill="#fbf3e1"/>
+    <clipPath id="cc-${c.id}"><rect x="15" y="7.5" width="30" height="73" rx="1.5"/></clipPath>
+    <g clip-path="url(#cc-${c.id})"><g>${half}</g><g transform="rotate(180 30 44)">${half}</g></g>
+    <path d="M15,44 H45" stroke="${GOLD_D}" stroke-width=".6"/>
+    <rect x="15" y="7.5" width="30" height="73" rx="1.5" fill="none" stroke="${main}" stroke-width=".8"/></g>`;
+}
 const RF = 'font-family="Alegreya Sans, system-ui, sans-serif" font-weight="700"';
 function cardSVG(c, mini) {
   const frame = `<rect x=".6" y=".6" width="58.8" height="86.8" rx="5.5" fill="#fffdf7" stroke="#d8ccb0" stroke-width="1.2"/>`;
@@ -70,8 +142,7 @@ function cardSVG(c, mini) {
   const corner = `<text x="${r.length > 1 ? 4 : 5.5}" y="17" ${RF} font-size="${fs}" fill="${col}">${r}</text>${suitG(c.s, 10, 26, .62)}`;
   let body;
   if (c.r >= 11) {
-    body = `<rect x="15" y="20" width="30" height="48" rx="3" fill="${col}" fill-opacity=".07" stroke="${col}" stroke-opacity=".55" stroke-width="1"/>
-      <text x="30" y="49" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-weight="700" font-size="22" fill="${col}">${r}</text>${suitG(c.s, 30, 59, .8)}`;
+    body = courtSVG(c);
   } else {
     body = suitG(c.s, 31, 49, c.r === 1 ? 2.4 : 1.75);
   }
