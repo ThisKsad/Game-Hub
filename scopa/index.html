@@ -243,7 +243,10 @@ ul.lobby{list-style:none; margin:0; padding:0; display:flex; flex-direction:colu
 ul.lobby li{display:grid; grid-template-columns:18px minmax(0,1fr) auto auto; gap:8px; align-items:center; padding:8px 10px; border:1px solid #e0d5bb; border-radius:6px; background:#fffaf0}
 ul.lobby li.open .pname{color:var(--ink-soft); font-style:italic}
 ul.lobby .num{font-family:var(--display); font-weight:700; color:var(--wine)}
-ul.lobby .pname{font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+ul.lobby .pname{font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
+ul.lobby .pname-edit{font:inherit; font-weight:700; width:100%; box-sizing:border-box; padding:3px 22px 3px 6px; margin:-3px 0; border:1px dashed transparent; border-radius:4px; background:transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238c2c2a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 20h4L19 9l-4-4L4 16z'/%3E%3Cpath d='M13 7l4 4'/%3E%3C/svg%3E") no-repeat right 4px center / 13px; color:var(--ink); text-overflow:ellipsis; cursor:text}
+ul.lobby .pname-edit:hover{border-color:#cdbf9f}
+ul.lobby .pname-edit:focus{outline:none; border:1px solid var(--wine); background-color:#fff; background-image:none; padding-right:6px}
 .ptags{display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end}
 ul.lobby .team.t0{color:#9a6a12; border-color:#d6b46a} ul.lobby .team.t1{color:#2f5d8a; border-color:#9ab9d6}
 .opp .top{flex-wrap:wrap; row-gap:4px}
@@ -411,7 +414,7 @@ de:{
   copyCode:"Code kopieren", copyLink:"Link kopieren", copiedCode:"Code kopiert.", copiedLink:"Link kopiert.", linkSelected:"Link markiert, jetzt kopieren.",
   seatsHead:"Plätze · {m} · bis {n}", host:"Gastgeber", freeSeat:"Freier Platz", release:"Freigeben",
   openSeats1:"Noch 1 Platz frei. Beim Start übernimmt dort der Computer.", openSeatsN:"Noch {n} Plätze frei. Beim Start übernimmt dort der Computer.",
-  allSeated:"Alle Plätze sind besetzt.", waitHost:"Warten, bis {who} das Spiel startet.",
+  allSeated:"Alle Plätze sind besetzt.", renameHint:"Zum Ändern einfach auf einen Namen tippen.", editName:"Name von Platz {n} ändern", waitHost:"Warten, bis {who} das Spiel startet.",
   netErr:"Keine Verbindung zum Server. Online spielen geht über thisksad.github.io/Game-Hub/scopa/ und braucht Internet.",
   badResponse:"Unerwartete Antwort vom Server.", serverErr:"Serverfehler, bitte nochmal versuchen.", loadErr:"Serverfehler beim Laden.",
   roomGone:"Diesen Raum gibt es nicht mehr.", seatLost:"Dein Platz in diesem Raum ist nicht mehr gültig, zum Beispiel weil der Computer ihn übernommen hat.",
@@ -469,7 +472,7 @@ en:{
   copyCode:"Copy code", copyLink:"Copy link", copiedCode:"Code copied.", copiedLink:"Link copied.", linkSelected:"Link selected, copy it now.",
   seatsHead:"Seats · {m} · to {n}", host:"Host", freeSeat:"Free seat", release:"Free up",
   openSeats1:"1 seat still free. The computer takes it when the game starts.", openSeatsN:"{n} seats still free. The computer takes them when the game starts.",
-  allSeated:"All seats are taken.", waitHost:"Waiting for {who} to start the game.",
+  allSeated:"All seats are taken.", renameHint:"Tap a name to change it.", editName:"Change the name of seat {n}", waitHost:"Waiting for {who} to start the game.",
   netErr:"No connection to the server. Online play works at thisksad.github.io/Game-Hub/scopa/ and needs internet.",
   badResponse:"Unexpected response from the server.", serverErr:"Server error, please try again.", loadErr:"Server error while loading.",
   roomGone:"This room no longer exists.", seatLost:"Your seat in this room is no longer valid, for example because the computer took it over.",
@@ -527,7 +530,7 @@ pt:{
   copyCode:"Copiar código", copyLink:"Copiar link", copiedCode:"Código copiado.", copiedLink:"Link copiado.", linkSelected:"Link selecionado, copie agora.",
   seatsHead:"Lugares · {m} · até {n}", host:"Anfitrião", freeSeat:"Lugar livre", release:"Liberar",
   openSeats1:"Ainda há 1 lugar livre. Ao começar, o computador o ocupa.", openSeatsN:"Ainda há {n} lugares livres. Ao começar, o computador os ocupa.",
-  allSeated:"Todos os lugares estão ocupados.", waitHost:"Esperando {who} começar o jogo.",
+  allSeated:"Todos os lugares estão ocupados.", renameHint:"Toque em um nome para alterá-lo.", editName:"Alterar o nome do lugar {n}", waitHost:"Esperando {who} começar o jogo.",
   netErr:"Sem conexão com o servidor. O jogo online funciona em thisksad.github.io/Game-Hub/scopa/ e precisa de internet.",
   badResponse:"Resposta inesperada do servidor.", serverErr:"Erro no servidor, tente novamente.", loadErr:"Erro do servidor ao carregar.",
   roomGone:"Esta sala não existe mais.", seatLost:"Seu lugar nesta sala não é mais válido, por exemplo porque o computador assumiu.",
@@ -1021,7 +1024,7 @@ function chooseMove(G, p, level, optionsFn, rnd) {
     if (!m.opt) {
       const rest = [...table, c];
       sc = -worth(c) * (extreme || hard ? 0.4 : 1.3) - danger(rest);
-      if (extreme && lastPlay && G.lastSide !== null && G.lastSide !== undefined) sc += (G.lastSide === mySide ? 1 : -1) * worthAll(rest);
+      if ((extreme || hard) && lastPlay && G.lastSide !== null && G.lastSide !== undefined) sc += (G.lastSide === mySide ? 1 : -1) * worthAll(rest);
     } else {
       const ids = new Set(m.opt.map(x => x.id)), rest = table.filter(x => !ids.has(x.id));
       sc = worth(c) + worthAll(m.opt);
@@ -1238,7 +1241,12 @@ function animateDeal(kind){
 function renderOverlay(){
   const ov=$('overlay');
   if(ui.menu){ if(!$('menuForm')){ ov.innerHTML=menuHTML(); bindMenu(); } return; }
-  if(S.online&&S.phase==='lobby'){ ov.innerHTML=lobbyHTML(); bindLobby(); return; }
+  if(S.online&&S.phase==='lobby'){
+    const a=document.activeElement, keep=a&&a.classList&&a.classList.contains('pname-edit')?{id:a.id,v:a.value,s:a.selectionStart,e:a.selectionEnd}:null;
+    ov.innerHTML=lobbyHTML(); bindLobby();
+    if(keep&&$(keep.id)){ const el=$(keep.id); el.value=keep.v; el.focus(); try{ el.setSelectionRange(keep.s,keep.e); }catch(e){} }
+    return;
+  }
   if(S.phase==='roundEnd'||S.phase==='gameEnd'){ ov.innerHTML=summaryHTML(); bindSummary(); return; }
   if(needsCover()){ ov.innerHTML=coverHTML(); $('reveal').addEventListener('click',()=>{ui.revealed=S.turn; render();}); $('reveal').focus(); return; }
   ov.innerHTML='';
@@ -1679,7 +1687,7 @@ function lobbyHTML(){
     let ctrl='';
     if(host&&i>0&&(p.open||p.ai)) ctrl=`<select class="lvl" data-seat="${i}" aria-label="${t('seatBy',{n:i+1})}"><option value="open" ${p.open?'selected':''}>${t('freeSeat')}</option><optgroup label="${t('computer')}">${LEVELS.map(l=>`<option value="${l}" ${!p.open&&(p.level||'normal')===l?'selected':''}>${t('lvl_'+l)}</option>`).join('')}</optgroup></select>`;
     else if(p.ai) tags.push(`<span class="tag dark">${esc(compLabel(p.level))}</span>`);
-    return `<li class="${p.open?'open':''}"><span class="num">${i+1}</span><span class="pname">${p.open?t('freeSeat'):esc(p.name)}</span><span class="ptags">${tags.join('')}</span>${ctrl}</li>`;
+    return `<li class="${p.open?'open':''}"><span class="num">${i+1}</span>${host&&!p.open?`<span class="pname"><input class="pname-edit" id="pn${i}" data-seat="${i}" type="text" maxlength="16" value="${esc(p.name)}" data-orig="${esc(p.name)}" aria-label="${t('editName',{n:i+1})}" title="${t('editName',{n:i+1})}" autocomplete="off"></span>`:`<span class="pname">${p.open?t('freeSeat'):esc(p.name)}</span>`}<span class="ptags">${tags.join('')}</span>${ctrl}</li>`;
   }).join('');
   const open=st.players.filter(p=>p.open).length;
   return `<div class="overlay"><div class="sheet" role="dialog" aria-label="${t('waitingRoom')}">
@@ -1688,11 +1696,25 @@ function lobbyHTML(){
     <div class="codebox"><b id="roomCode">${ON.code}</b><div class="actions"><button class="btn" type="button" id="copyCode">${t('copyCode')}</button><button class="btn" type="button" id="copyLink">${t('copyLink')}</button></div></div>
     <p class="hint linktext" id="linkText">${esc(link)}</p>
     <div class="field"><span>${esc(t('seatsHead',{m:mode,n:st.settings.target}))}</span><ul class="lobby">${rows}</ul></div>
-    ${host?`<p class="hint">${open?(open===1?t('openSeats1'):t('openSeatsN',{n:open})):t('allSeated')}</p>`:`<p class="hint">${esc(t('waitHost',{who:st.players[0].name}))}</p>`}
+    ${host?`<p class="hint">${open?(open===1?t('openSeats1'):t('openSeatsN',{n:open})):t('allSeated')} ${t('renameHint')}</p>`:`<p class="hint">${esc(t('waitHost',{who:st.players[0].name}))}</p>`}
     <div class="actions"><button class="btn" type="button" id="leaveRoom">${t('leaveRoom')}</button>${host?`<button class="btn primary" type="button" id="startRoom">${t('startGame')}</button>`:''}</div>
   </div></div>`;
 }
 function bindLobby(){
+  document.querySelectorAll('input.pname-edit').forEach(inp=>{
+    const commit=()=>{
+      const name=inp.value.trim().slice(0,16);
+      if(!name){ inp.value=inp.dataset.orig; return; }
+      if(name===inp.dataset.orig) return;
+      inp.dataset.orig=name;
+      onlineAction('rename',{seat:+inp.dataset.seat, name});
+    };
+    inp.addEventListener('change',commit);
+    inp.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){ e.preventDefault(); inp.blur(); }
+      else if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); inp.value=inp.dataset.orig; inp.blur(); }
+    });
+  });
   const copy=(text,msg)=>{
     const done=()=>toast(msg);
     try{ navigator.clipboard.writeText(text).then(done,()=>selectText()); }catch(e){ selectText(); }

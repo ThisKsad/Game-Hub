@@ -148,7 +148,7 @@ export function chooseMove(G, p, level, optionsFn, rnd) {
     if (!m.opt) {
       const rest = [...table, c];
       sc = -worth(c) * (extreme || hard ? 0.4 : 1.3) - danger(rest);
-      if (extreme && lastPlay && G.lastSide !== null && G.lastSide !== undefined) sc += (G.lastSide === mySide ? 1 : -1) * worthAll(rest);
+      if ((extreme || hard) && lastPlay && G.lastSide !== null && G.lastSide !== undefined) sc += (G.lastSide === mySide ? 1 : -1) * worthAll(rest);
     } else {
       const ids = new Set(m.opt.map(x => x.id)), rest = table.filter(x => !ids.has(x.id));
       sc = worth(c) + worthAll(m.opt);

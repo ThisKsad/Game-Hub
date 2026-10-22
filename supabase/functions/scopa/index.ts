@@ -1,5 +1,5 @@
 // Online-Scopa server: holds the deck and all hands, validates every move.
-// Actions: create, join, leave, seat, start, play, ai, next, again, replace.
+// Actions: create, join, leave, seat, rename, start, play, ai, next, again, replace.
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 import * as C from './core.js';
 
@@ -130,6 +130,17 @@ async function handle(b: any) {
       if (!p.open && !p.ai) throw C.err('Auf diesem Platz sitzt schon jemand.', 409, 'seatTaken');
       const level = C.LEVELS.includes(b.level) ? b.level : 'normal';
       G.players[s] = b.ai ? { name: p.ai ? p.name : pickCompName(G.players), ai: true, level, open: false } : { name: null, ai: false, open: true };
+      const version = await save(room, G, tokens);
+      return { ok: true, version, state: C.publicState(G) };
+    }
+    case 'rename': {
+      // the host may correct anyone's name while the room is still waiting
+      const { room, G, tokens } = await load(b.code);
+      requireHost(tokens, b.token);
+      if (G.status !== 'lobby') throw C.err('Das Spiel läuft schon.', 409, 'started');
+      const s = Number(b.seat), p = G.players[s];
+      if (!p || p.open) throw C.err('Diesen Platz gibt es nicht.', 400, 'noSeat');
+      p.name = cleanName(b.name, p.name);
       const version = await save(room, G, tokens);
       return { ok: true, version, state: C.publicState(G) };
     }
