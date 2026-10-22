@@ -172,7 +172,7 @@
     if (!root.querySelector('.menubg')) root.innerHTML = '<div class="menubg" aria-hidden="true"><div class="bgstrip">' + strip + '</div><div class="menushade"></div></div><div id="menuContent"></div>';
     root.querySelector('#menuContent').innerHTML = '<div class="page menupage">' +
       '<div class="topbar"><a class="iconbtn glass" href="../" aria-label="Zurück zum Game Hub">' + ICON.door + '</a></div>' +
-      '<div class="title"><div class="wheel">' + ICON.wheel + '</div><h1>' + GAME_NAME + '</h1><p>Das Duell der Jahreszeiten · Testphase</p></div>' +
+      '<div class="title"><div class="wheel" style="animation-delay:-' + ((performance.now() / 1000) % 60).toFixed(2) + 's">' + ICON.wheel + '</div><h1>' + GAME_NAME + '</h1><p>Das Duell der Jahreszeiten · Testphase</p></div>' +
       (OFFLINE ? '<div class="banner">Der Server ist gerade nicht erreichbar. Du kannst mit den Startdecks spielen, Änderungen an Decks werden aber nicht gespeichert.</div>' : '') +
       '<div class="menu-actions center"><button class="btn primary big" id="mPlay">Spielen</button><button class="btn glassbtn" id="mDecks">Decks</button><button class="btn glassbtn" id="mRules">Regeln</button></div>' +
       '<div class="panel glass" style="margin-bottom:16px"><div class="lblrow"><span class="lbl">Dein Deck</span></div><div class="dtiles">' + tiles + '</div>' +
