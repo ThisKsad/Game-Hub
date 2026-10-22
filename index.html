@@ -87,6 +87,20 @@ footer{margin-top:40px; color:var(--muted); font-size:14px; text-align:center}
       </div>
       <span class="play" data-t="play"></span>
     </a>
+    <a class="tile featured" href="asse-raus/">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <g transform="rotate(-14 32 36)"><rect x="11" y="9" width="29" height="45" rx="4" fill="#8c2c2a" stroke="#2b2218" stroke-opacity=".25" stroke-width="2"/><path d="M17 16l17 31M34 16l-17 31" stroke="#f6efdf" stroke-opacity=".35" stroke-width="2"/></g>
+        <g transform="rotate(10 32 36)"><rect x="23" y="9" width="29" height="45" rx="4" fill="#fffdf7" stroke="#245442" stroke-width="2.5"/>
+          <text x="37.5" y="35" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-weight="700" font-size="17" fill="#1f1a14">A</text>
+          <path d="M37.5,38 C32.5,42 33.6,46.5 36.8,45 L35.7,48.2 H39.3 L38.2,45 C41.4,46.5 42.5,42 37.5,38Z" fill="#1f1a14"/></g>
+      </svg>
+      <div>
+        <h3>Asse Raus</h3>
+        <p data-t="asseDesc"></p>
+        <div class="tags"><span data-t="tagPlayers"></span><span data-t="tagLocal"></span><span data-t="tagOnline"></span><span data-t="tagComputer"></span></div>
+      </div>
+      <span class="play" data-t="play"></span>
+    </a>
   </div>
 
   <h2 data-t="planned"></h2>
@@ -115,7 +129,8 @@ const LANGS={de:'Deutsch',en:'English',pt:'Português (Brasil)'};
 const I18N={
   de:{tagline:'Unsere selbstgebauten Browser-Spiele', language:'Sprache', playNow:'Jetzt spielen', play:'Spielen',
     scopaDesc:'Das italienische Kartenspiel – Karten von der Mitte holen, Scopa machen, Punkte sammeln.',
-    tagPlayers:'2–4 Spieler', tagLocal:'Ein Gerät', tagOnline:'Online per Raum-Code', tagModes:'4 Regelmodi',
+    tagPlayers:'2–4 Spieler', tagLocal:'Ein Gerät', tagOnline:'Online per Raum-Code', tagModes:'4 Regelmodi', tagComputer:'Computergegner',
+    asseDesc:'Ähnlich wie Skip-Bo mit Rommé-Karten – baut in der Mitte von Ass bis König und werdet euren Stapel als Erste los.',
     planned:'In Arbeit', soon:'Bald',
     tempora:'Tempora', temporaDesc:'Unser eigenes Duell-Kartenspiel: Vier Jahreszeiten verändern Kosten, Feld und Kampf.', testing:'Testphase',
     game2d:'2D-Spiel', game2dDesc:'Der nächste Schritt: Bewegung, Level, Action.',
@@ -123,7 +138,8 @@ const I18N={
     footer:'Läuft direkt im Browser – auf dem Handy auch zum Startbildschirm hinzufügen.'},
   en:{tagline:'Our home-made browser games', language:'Language', playNow:'Play now', play:'Play',
     scopaDesc:'The Italian card game – capture cards from the table, make a scopa, rack up points.',
-    tagPlayers:'2–4 players', tagLocal:'One device', tagOnline:'Online via room code', tagModes:'4 rule modes',
+    tagPlayers:'2–4 players', tagLocal:'One device', tagOnline:'Online via room code', tagModes:'4 rule modes', tagComputer:'Computer opponents',
+    asseDesc:'Like Skip-Bo with rummy cards – build ace to king in the centre and be the first to empty your stack.',
     planned:'In the works', soon:'Soon',
     tempora:'Tempora', temporaDesc:'Our own duel card game: four seasons change costs, field and combat.', testing:'Testing',
     game2d:'2D game', game2dDesc:'The next step: movement, levels, action.',
@@ -131,7 +147,8 @@ const I18N={
     footer:'Runs right in the browser – on your phone you can add it to the home screen.'},
   pt:{tagline:'Nossos jogos de navegador feitos em casa', language:'Idioma', playNow:'Jogar agora', play:'Jogar',
     scopaDesc:'O jogo de cartas italiano – pegue cartas da mesa, faça scopa, some pontos.',
-    tagPlayers:'2–4 jogadores', tagLocal:'Um aparelho', tagOnline:'Online por código de sala', tagModes:'4 modos de regras',
+    tagPlayers:'2–4 jogadores', tagLocal:'Um aparelho', tagOnline:'Online por código de sala', tagModes:'4 modos de regras', tagComputer:'Contra o computador',
+    asseDesc:'Parecido com Skip-Bo com cartas de buraco – montem do ás ao rei no centro e esvaziem seu monte primeiro.',
     planned:'Em produção', soon:'Em breve',
     tempora:'Tempora', temporaDesc:'Nosso próprio jogo de cartas de duelo: quatro estações mudam custos, campo e combate.', testing:'Em teste',
     game2d:'Jogo 2D', game2dDesc:'O próximo passo: movimento, fases, ação.',
