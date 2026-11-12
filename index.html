@@ -101,6 +101,19 @@ footer{margin-top:40px; color:var(--muted); font-size:14px; text-align:center}
       </div>
       <span class="play" data-t="play"></span>
     </a>
+    <a class="tile featured" href="schach/">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="8" y="8" width="48" height="48" rx="5" fill="#fffaf0" stroke="#245442" stroke-width="2.5"/>
+        <path d="M8 20h12v12H8zM32 20h12v12H32zM20 32h12v12H20zM44 32h12v12H44zM20 8h12v12H20zM44 8h12v12H44zM8 44h12v12H8zM32 44h12v12H32z" fill="#7a9a6a" opacity=".55"/>
+        <g transform="translate(18 12)" fill="#8c2c2a" stroke="#2b2218" stroke-width="1.6" stroke-linejoin="round"><path d="M6 38h20l-2-5H8z"/><path d="M9 33c1-7 2-11-2-15 3-7 9-11 15-9l-2 3c4 3 5 8 3 11l-4-2c-2 4-2 6-1 12z"/></g>
+      </svg>
+      <div>
+        <h3 data-t="chess"></h3>
+        <p data-t="chessDesc"></p>
+        <div class="tags"><span data-t="tagComputer"></span><span data-t="tagLocal"></span><span data-t="tagOnline"></span><span data-t="tagAnalysis"></span></div>
+      </div>
+      <span class="play" data-t="play"></span>
+    </a>
   </div>
 
   <h2 data-t="tools"></h2>
@@ -142,7 +155,7 @@ const I18N={
     scopaDesc:'Das italienische Kartenspiel – Karten von der Mitte holen, Scopa machen, Punkte sammeln.',
     tagPlayers:'2–4 Spieler', tagLocal:'Ein Gerät', tagOnline:'Online per Raum-Code', tagModes:'4 Regelmodi', tagComputer:'Computergegner',
     asseDesc:'Ähnlich wie Skip-Bo mit Rommé-Karten – baut in der Mitte von Ass bis König und werdet euren Stapel als Erste los.',
-    planned:'In Arbeit', soon:'Bald', tools:'Werkzeuge', clock:'Schachuhr', clockDesc:'Für Partien am echten Brett – mit Bonuszeit pro Zug, z. B. 15+10.',
+    planned:'In Arbeit', soon:'Bald', tools:'Werkzeuge', chess:'Schach', chessDesc:'Gegen den Computer in acht Stufen, zu zweit oder online – mit Analyse deiner Fehler nach der Partie.', tagAnalysis:'Analyse & Lernhilfen', clock:'Schachuhr', clockDesc:'Für Partien am echten Brett – mit Bonuszeit pro Zug, z. B. 15+10.',
     tempora:'Tempora', temporaDesc:'Unser eigenes Duell-Kartenspiel: Vier Jahreszeiten verändern Kosten, Feld und Kampf.', testing:'Testphase',
     game2d:'2D-Spiel', game2dDesc:'Der nächste Schritt: Bewegung, Level, Action.',
     game3d:'3D-Spiel', game3dDesc:'Das große Ziel.',
@@ -151,7 +164,7 @@ const I18N={
     scopaDesc:'The Italian card game – capture cards from the table, make a scopa, rack up points.',
     tagPlayers:'2–4 players', tagLocal:'One device', tagOnline:'Online via room code', tagModes:'4 rule modes', tagComputer:'Computer opponents',
     asseDesc:'Like Skip-Bo with rummy cards – build ace to king in the centre and be the first to empty your stack.',
-    planned:'In the works', soon:'Soon', tools:'Tools', clock:'Chess clock', clockDesc:'For games on a real board – with increment per move, e.g. 15+10.',
+    planned:'In the works', soon:'Soon', tools:'Tools', chess:'Chess', chessDesc:'Against the computer in eight levels, two players or online – with an analysis of your mistakes after the game.', tagAnalysis:'Analysis & learning aids', clock:'Chess clock', clockDesc:'For games on a real board – with increment per move, e.g. 15+10.',
     tempora:'Tempora', temporaDesc:'Our own duel card game: four seasons change costs, field and combat.', testing:'Testing',
     game2d:'2D game', game2dDesc:'The next step: movement, levels, action.',
     game3d:'3D game', game3dDesc:'The big goal.',
@@ -160,7 +173,7 @@ const I18N={
     scopaDesc:'O jogo de cartas italiano – pegue cartas da mesa, faça scopa, some pontos.',
     tagPlayers:'2–4 jogadores', tagLocal:'Um aparelho', tagOnline:'Online por código de sala', tagModes:'4 modos de regras', tagComputer:'Contra o computador',
     asseDesc:'Parecido com Skip-Bo com cartas de buraco – montem do ás ao rei no centro e esvaziem seu monte primeiro.',
-    planned:'Em produção', soon:'Em breve', tools:'Ferramentas', clock:'Relógio de xadrez', clockDesc:'Para partidas no tabuleiro de verdade – com acréscimo por lance, ex. 15+10.',
+    planned:'Em produção', soon:'Em breve', tools:'Ferramentas', chess:'Xadrez', chessDesc:'Contra o computador em oito níveis, a dois ou online – com análise dos seus erros depois da partida.', tagAnalysis:'Análise e ajudas', clock:'Relógio de xadrez', clockDesc:'Para partidas no tabuleiro de verdade – com acréscimo por lance, ex. 15+10.',
     tempora:'Tempora', temporaDesc:'Nosso próprio jogo de cartas de duelo: quatro estações mudam custos, campo e combate.', testing:'Em teste',
     game2d:'Jogo 2D', game2dDesc:'O próximo passo: movimento, fases, ação.',
     game3d:'Jogo 3D', game3dDesc:'O grande objetivo.',
