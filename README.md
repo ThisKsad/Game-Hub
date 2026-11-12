@@ -12,6 +12,12 @@ Die Startseite (`index.html` im Hauptordner) verlinkt alle Spiele und zeigt, was
 | Asse Raus | [`asse-raus/`](asse-raus/) | Wie Skip-Bo mit 2 Rommé-Decks: 2–4 Spieler gegen den Computer (3 Stufen), reihum an einem Gerät oder online per Raum-Code; Stapelgröße, Plätze in der Mitte und Joker einstellbar; Deutsch, Englisch, Portugiesisch (BR) |
 | Scopa | [`scopa/`](scopa/) | 2–4 Spieler an einem Gerät oder online per Raum-Code (freie Plätze übernimmt der Computer), Modi: Hausregeln, Klassisch, Asso piglia tutto, eigene Regeln; Deutsch, Englisch, Portugiesisch (BR) |
 
+## Werkzeuge
+
+| Werkzeug | Ordner | Stand |
+|---|---|---|
+| Schachuhr | [`schachuhr/`](schachuhr/) | Zwei gegenüberliegende Hälften fürs Handy zwischen den Spielern; Vorlagen von 1+0 bis 60+0, eigene Zeiten und Bonus pro Zug (Fischer), auf Wunsch unterschiedliche Zeiten; Pause, Zugzähler, Ton/Vibration, Bildschirm bleibt an |
+
 ## Geplant
 
 - 2D-Spiel

@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#173a2c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<title>Schachuhr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Alegreya+Sans:wght@400;500;700;800&display=swap">
+<style>
+/* Two halves facing each other: tap your own half after your move to start the opponent's clock. */
+:root{
+  --felt:#245442; --felt-deep:#173a2c; --felt-line:#3a6b57;
+  --brass:#d6ac55; --brass-soft:rgba(214,172,85,.18);
+  --cream:#f6efdf; --ink:#2b2218; --ink-soft:#6c5f4c; --wine:#8c2c2a; --red:#c0392b;
+  --text:#ede7d7; --muted:#a8bdac;
+  --display:"Cinzel", "Trajan Pro", Georgia, serif;
+  --body:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{height:100%; margin:0; overflow:hidden; overscroll-behavior:none}
+body{background:var(--felt-deep); color:var(--text); font-family:var(--body); user-select:none; -webkit-user-select:none; touch-action:manipulation}
+.app{height:100vh; height:100dvh; display:flex; flex-direction:column; padding:max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom))}
+
+.side{flex:1; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; border:none; border-radius:18px; cursor:pointer;
+  background:#1d4636; color:var(--muted); font-family:var(--body); transition:background .15s ease, color .15s ease; padding:12px; min-height:0}
+.side.top{transform:rotate(180deg)}
+.side.active{background:var(--cream); color:var(--ink)}
+.side.low.active{background:#f3d9b0}
+.side.flag{background:var(--red); color:#fff}
+.side:focus-visible{outline:3px solid var(--brass); outline-offset:-3px}
+.time{font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.02em; line-height:1; font-size:clamp(56px, min(24vw, 15vh), 150px)}
+.meta{display:flex; gap:14px; margin-top:10px; font-size:clamp(14px, 3.8vw, 18px); font-weight:500; opacity:.8}
+.hint{position:absolute; bottom:12px; left:0; right:0; text-align:center; font-size:14px; opacity:.75}
+.side.active .hint, .side.flag .hint{opacity:0}
+
+.bar{display:flex; align-items:center; justify-content:center; gap:10px; padding:8px 0; flex:none}
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; height:46px; min-width:46px; padding:0 14px; border-radius:999px; border:1px solid var(--felt-line);
+  background:transparent; color:var(--text); font:700 15px var(--body); cursor:pointer; text-decoration:none}
+.btn svg{width:20px; height:20px}
+.btn.main{background:var(--brass); border-color:var(--brass); color:var(--felt-deep)}
+.btn:disabled{opacity:.35; cursor:default}
+.btn:focus-visible{outline:2px solid var(--brass); outline-offset:2px}
+.label{font-family:var(--display); color:var(--brass); font-size:14px; letter-spacing:.1em; min-width:64px; text-align:center}
+
+/* settings sheet */
+.sheet{position:fixed; inset:0; background:rgba(10,25,19,.72); display:none; align-items:flex-end; justify-content:center; z-index:10}
+.sheet.open{display:flex}
+.panel{width:100%; max-width:520px; max-height:92dvh; overflow:auto; background:var(--felt-deep); border:1px solid var(--felt-line); border-radius:20px 20px 0 0; padding:20px 16px max(20px, env(safe-area-inset-bottom))}
+@media (min-width:560px){.sheet{align-items:center}.panel{border-radius:20px}}
+.panel h2{font-family:var(--display); color:var(--brass); letter-spacing:.1em; font-size:20px; margin:0 0 14px}
+.panel h3{font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:18px 0 8px; font-weight:700}
+.presets{display:grid; grid-template-columns:repeat(4,1fr); gap:8px}
+.preset{height:52px; border-radius:12px; border:1px solid var(--felt-line); background:#1d4636; color:var(--text); font:700 17px var(--body); cursor:pointer}
+.preset small{display:block; font-size:11px; font-weight:500; color:var(--muted)}
+.preset.on{background:var(--brass); border-color:var(--brass); color:var(--felt-deep)}
+.preset.on small{color:var(--felt-deep)}
+.row{display:flex; align-items:center; gap:10px; margin:8px 0; flex-wrap:wrap}
+.row label{flex:1 1 140px; color:var(--text)}
+.num{display:flex; align-items:center; gap:6px}
+.num input{width:64px; height:42px; border-radius:10px; border:1px solid var(--felt-line); background:#1d4636; color:var(--text); font:700 18px var(--body); text-align:center}
+.num span{color:var(--muted); font-size:14px; min-width:28px}
+.check{display:flex; align-items:center; gap:10px; margin:12px 0; cursor:pointer}
+.check input{width:22px; height:22px; accent-color:var(--brass)}
+.who{font-weight:700; color:var(--brass); margin-top:14px}
+.actions{display:flex; gap:10px; margin-top:20px}
+.actions .btn{flex:1; height:50px; justify-content:center}
+.langs{display:flex; gap:4px}
+.lang{font:700 13px var(--body); color:var(--muted); background:transparent; border:1px solid var(--felt-line); border-radius:6px; padding:5px 8px; cursor:pointer}
+.lang.on{color:var(--felt-deep); background:var(--brass); border-color:var(--brass)}
+.head{display:flex; justify-content:space-between; align-items:flex-start; gap:10px}
+.confirm{position:fixed; inset:0; background:rgba(10,25,19,.72); display:none; align-items:center; justify-content:center; z-index:11; padding:16px}
+.confirm.open{display:flex}
+.confirm .panel{border-radius:20px; max-width:360px; text-align:center}
+.confirm p{margin:0 0 4px; font-size:18px}
+</style>
+</head>
+<body>
+<div class="app">
+  <button class="side top" id="s1" type="button"><div class="time" id="t1">15:00</div><div class="meta"><span id="m1"></span><span id="i1"></span></div><div class="hint" id="h1"></div></button>
+  <div class="bar">
+    <a class="btn" href="../" id="homeBtn" aria-label="Game Hub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg></a>
+    <button class="btn" id="resetBtn" type="button" aria-label="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button>
+    <button class="btn main" id="pauseBtn" type="button" aria-label="Pause"><svg id="pauseIcon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+    <span class="label" id="tcLabel">15+10</span>
+    <button class="btn" id="soundBtn" type="button" aria-label="Ton"></button>
+    <button class="btn" id="setBtn" type="button" aria-label="Einstellungen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
+  </div>
+  <button class="side" id="s2" type="button"><div class="time" id="t2">15:00</div><div class="meta"><span id="m2"></span><span id="i2"></span></div><div class="hint" id="h2"></div></button>
+</div>
+
+<div class="sheet" id="sheet">
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+    <div class="head"><h2 id="setTitle" data-t="settings"></h2><div class="langs" id="langs"></div></div>
+    <h3 data-t="presets"></h3>
+    <div class="presets" id="presets"></div>
+    <h3 data-t="custom"></h3>
+    <div class="who" id="whoA" data-t="both"></div>
+    <div class="row"><label data-t="base"></label><div class="num"><input id="aMin" type="number" inputmode="numeric" min="0" max="300"><span>min</span><input id="aSec" type="number" inputmode="numeric" min="0" max="59"><span>s</span></div></div>
+    <div class="row"><label data-t="inc"></label><div class="num"><input id="aInc" type="number" inputmode="numeric" min="0" max="120"><span>s</span></div></div>
+    <label class="check"><input type="checkbox" id="diff"><span data-t="diff"></span></label>
+    <div id="bBox" hidden>
+      <div class="who" data-t="bottomPlayer"></div>
+      <div class="row"><label data-t="base"></label><div class="num"><input id="bMin" type="number" inputmode="numeric" min="0" max="300"><span>min</span><input id="bSec" type="number" inputmode="numeric" min="0" max="59"><span>s</span></div></div>
+      <div class="row"><label data-t="inc"></label><div class="num"><input id="bInc" type="number" inputmode="numeric" min="0" max="120"><span>s</span></div></div>
+    </div>
+    <div class="actions"><button class="btn" id="cancelBtn" type="button" data-t="cancel"></button><button class="btn main" id="applyBtn" type="button" data-t="apply"></button></div>
+  </div>
+</div>
+
+<div class="confirm" id="confirm">
+  <div class="panel" role="alertdialog" aria-modal="true">
+    <p data-t="resetQ"></p>
+    <div class="actions"><button class="btn" id="noBtn" type="button" data-t="cancel"></button><button class="btn main" id="yesBtn" type="button" data-t="reset"></button></div>
+  </div>
+</div>
+
+<script>
+const LANGS={de:'Deutsch',en:'English',pt:'Português (Brasil)'};
+const I18N={
+  de:{settings:'Zeitkontrolle', presets:'Vorlagen', custom:'Eigene Zeit', both:'Beide Spieler', topPlayer:'Oben', bottomPlayer:'Unten (dieser Spieler)',
+    base:'Bedenkzeit', inc:'Zeit pro Zug (Bonus)', diff:'Unterschiedliche Zeiten (Vorgabe)', cancel:'Abbrechen', apply:'Übernehmen',
+    resetQ:'Uhr zurücksetzen?', reset:'Zurücksetzen', startHint:'Schwarz startet: auf die eigene Seite tippen', moves:'Züge', flag:'Zeit abgelaufen',
+    paused:'Pause – zum Fortsetzen tippen', blitz:'Blitz', rapid:'Schnellschach', classic:'Klassisch', bullet:'Bullet'},
+  en:{settings:'Time control', presets:'Presets', custom:'Custom time', both:'Both players', topPlayer:'Top', bottomPlayer:'Bottom (this player)',
+    base:'Base time', inc:'Increment per move', diff:'Different times (handicap)', cancel:'Cancel', apply:'Apply',
+    resetQ:'Reset the clock?', reset:'Reset', startHint:'Black starts: tap your own side', moves:'Moves', flag:'Time is up',
+    paused:'Paused – tap to resume', blitz:'Blitz', rapid:'Rapid', classic:'Classical', bullet:'Bullet'},
+  pt:{settings:'Controle de tempo', presets:'Modelos', custom:'Tempo próprio', both:'Ambos os jogadores', topPlayer:'Em cima', bottomPlayer:'Embaixo (este jogador)',
+    base:'Tempo base', inc:'Acréscimo por lance', diff:'Tempos diferentes (handicap)', cancel:'Cancelar', apply:'Aplicar',
+    resetQ:'Zerar o relógio?', reset:'Zerar', startHint:'As pretas começam: toque no seu lado', moves:'Lances', flag:'Tempo esgotado',
+    paused:'Pausado – toque para continuar', blitz:'Blitz', rapid:'Rápido', classic:'Clássico', bullet:'Bullet'}
+};
+const PRESETS=[
+  {m:1,i:0,k:'bullet'},{m:2,i:1,k:'bullet'},{m:3,i:0,k:'blitz'},{m:3,i:2,k:'blitz'},
+  {m:5,i:0,k:'blitz'},{m:5,i:3,k:'blitz'},{m:10,i:0,k:'rapid'},{m:10,i:5,k:'rapid'},
+  {m:15,i:10,k:'rapid'},{m:30,i:0,k:'rapid'},{m:30,i:20,k:'classic'},{m:60,i:0,k:'classic'}
+];
+const $=id=>document.getElementById(id);
+const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v??d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+function detectLang(){
+  const s=LS.get('scopa-settings',{}); if(LANGS[s.lang]) return s.lang;
+  const n=(navigator.language||'de').toLowerCase();
+  return n.startsWith('pt')?'pt':n.startsWith('en')?'en':'de';
+}
+let LANG=detectLang();
+const T=k=>I18N[LANG][k];
+
+/* time control: index 0 = top player, 1 = bottom player; times in ms */
+let tc=LS.get('schachuhr-tc',{a:{base:15*60000,inc:10000},b:{base:15*60000,inc:10000},diff:false});
+let sound=LS.get('schachuhr-sound',true);
+let st; // state
+function fresh(){
+  const pb=tc.diff?tc.b:tc.a;
+  st={left:[tc.a.base,pb.base], inc:[tc.a.inc,pb.inc], moves:[0,0], running:-1, paused:false, flag:-1, started:false, last:0, warned:[false,false]};
+}
+fresh();
+
+/* ---------- sound (synthesised, no files) ---------- */
+let ctx;
+function beep(f=880,d=.06,v=.15){
+  if(!sound) return;
+  try{ ctx=ctx||new (window.AudioContext||window.webkitAudioContext)(); if(ctx.state==='suspended') ctx.resume();
+    const o=ctx.createOscillator(), g=ctx.createGain(); o.frequency.value=f; o.type='square';
+    g.gain.setValueAtTime(v,ctx.currentTime); g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+d);
+    o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime+d+.02);
+  }catch(e){}
+}
+function buzz(ms){ try{ navigator.vibrate&&navigator.vibrate(ms); }catch(e){} }
+
+/* ---------- keep the screen awake while the clock runs ---------- */
+let lock=null;
+async function wake(on){
+  try{
+    if(on && !lock && 'wakeLock' in navigator){ lock=await navigator.wakeLock.request('screen'); lock.addEventListener('release',()=>{lock=null}); }
+    if(!on && lock){ await lock.release(); lock=null; }
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && st.running>=0 && !st.paused) wake(true); });
+
+/* ---------- display ---------- */
+function fmt(ms){
+  ms=Math.max(0,ms);
+  if(ms<20000){ const s=Math.floor(ms/1000), t=Math.floor(ms%1000/100); return s+','+t; }
+  const total=Math.ceil(ms/1000), h=Math.floor(total/3600), m=Math.floor(total%3600/60), s=total%60;
+  return h? h+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0') : m+':'+String(s).padStart(2,'0');
+}
+function incTxt(ms){ return ms? '+'+(ms/1000)+'s' : ''; }
+function tcName(){
+  const f=x=>{ const m=x.base/60000; return (Number.isInteger(m)?m:fmt(x.base))+'+'+(x.inc/1000); };
+  return tc.diff? f(tc.a)+' / '+f(tc.b) : f(tc.a);
+}
+function draw(){
+  for(const i of [0,1]){
+    const el=$('s'+(i+1));
+    el.classList.toggle('active', st.running===i && st.flag<0);
+    el.classList.toggle('low', st.left[i]<20000);
+    el.classList.toggle('flag', st.flag===i);
+    $('t'+(i+1)).textContent=st.flag===i? '0,0' : fmt(st.left[i]);
+    $('m'+(i+1)).textContent=st.flag===i? T('flag') : T('moves')+': '+st.moves[i];
+    $('i'+(i+1)).textContent=st.flag===i? '' : incTxt(st.inc[i]);
+    $('h'+(i+1)).textContent= !st.started ? T('startHint') : (st.paused && st.running===i ? T('paused') : '');
+  }
+  $('tcLabel').textContent=tcName();
+  $('pauseIcon').innerHTML= st.paused||!st.started
+    ? '<path d="M7 5l12 7-12 7z"/>'
+    : '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>';
+  $('pauseBtn').disabled=!st.started||st.flag>=0;
+  $('soundBtn').innerHTML= sound
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
+}
+
+/* ---------- clock loop (measured against performance.now, so it stays exact) ---------- */
+function tick(){
+  if(st.running>=0 && !st.paused && st.flag<0){
+    const now=performance.now(), i=st.running;
+    st.left[i]-=now-st.last; st.last=now;
+    if(st.left[i]<=10000 && !st.warned[i]){ st.warned[i]=true; beep(660,.08); }
+    if(st.left[i]<=0){ st.left[i]=0; st.flag=i; beep(440,.6,.2); buzz([200,100,200]); wake(false); }
+    draw();
+  }
+  requestAnimationFrame(tick);
+}
+
+/* tapping your own half ends your move and starts the opponent */
+function press(i){
+  if(st.flag>=0) return;
+  if(st.paused){ resume(); return; }
+  const other=1-i;
+  if(!st.started){ st.started=true; st.running=other; st.last=performance.now(); beep(1200,.04); buzz(15); wake(true); draw(); return; }
+  if(st.running!==i) return;           // not your clock – ignore accidental taps
+  const now=performance.now(); st.left[i]-=now-st.last;
+  if(st.left[i]<=0){ tick(); return; }
+  st.left[i]+=st.inc[i]; st.moves[i]++;
+  if(st.left[i]>10000) st.warned[i]=false;
+  st.running=other; st.last=now;
+  beep(1200,.04); buzz(15); draw();
+}
+function pause(){ if(!st.started||st.flag>=0||st.paused) return; const now=performance.now(); st.left[st.running]-=now-st.last; st.paused=true; wake(false); draw(); }
+function resume(){ st.paused=false; st.last=performance.now(); wake(true); draw(); }
+
+for(const i of [0,1]){
+  const el=$('s'+(i+1));
+  el.addEventListener('pointerdown',e=>{ e.preventDefault(); press(i); });
+  el.addEventListener('keydown',e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); press(i); } });
+}
+/* keyboard on a laptop: left shift / A = top, right shift / L = bottom, space = pause */
+document.addEventListener('keydown',e=>{
+  if($('sheet').classList.contains('open')||$('confirm').classList.contains('open')) return;
+  if(e.target.tagName==='BUTTON') return;
+  if(e.code==='ShiftLeft'||e.code==='KeyA') press(0);
+  else if(e.code==='ShiftRight'||e.code==='KeyL') press(1);
+  else if(e.code==='Space'){ e.preventDefault(); st.paused?resume():pause(); }
+});
+$('pauseBtn').onclick=()=>{ st.paused?resume():pause(); };
+$('soundBtn').onclick=()=>{ sound=!sound; LS.set('schachuhr-sound',sound); if(sound) beep(1200,.04); draw(); };
+$('resetBtn').onclick=()=>{ if(!st.started){ fresh(); draw(); return; } pause(); $('confirm').classList.add('open'); };
+$('noBtn').onclick=()=>$('confirm').classList.remove('open');
+$('yesBtn').onclick=()=>{ $('confirm').classList.remove('open'); fresh(); wake(false); draw(); };
+
+/* ---------- settings ---------- */
+function setInputs(p,x){ const s=Math.round(x.base/1000); $(p+'Min').value=Math.floor(s/60); $(p+'Sec').value=s%60; $(p+'Inc').value=x.inc/1000; }
+function readInputs(p){
+  const n=id=>Math.max(0,Math.floor(Number($(id).value)||0));
+  const base=(Math.min(n(p+'Min'),300)*60+Math.min(n(p+'Sec'),59))*1000;
+  return {base:Math.max(base,1000), inc:Math.min(n(p+'Inc'),120)*1000};
+}
+function renderPresets(){
+  const cur=readInputs('a'), diff=$('diff').checked;
+  $('presets').innerHTML=PRESETS.map((p,k)=>{
+    const on=!diff && cur.base===p.m*60000 && cur.inc===p.i*1000;
+    return `<button type="button" class="preset ${on?'on':''}" data-k="${k}">${p.m}+${p.i}<small>${T(p.k)}</small></button>`;
+  }).join('');
+}
+function renderTexts(){
+  document.documentElement.lang=LANG==='pt'?'pt-BR':LANG;
+  document.querySelectorAll('[data-t]').forEach(el=>el.textContent=T(el.dataset.t));
+  $('whoA').textContent=$('diff').checked? T('topPlayer') : T('both');
+  $('langs').innerHTML=Object.keys(LANGS).map(k=>`<button type="button" class="lang ${k===LANG?'on':''}" data-lang="${k}" title="${LANGS[k]}">${k==='pt'?'PT-BR':k.toUpperCase()}</button>`).join('');
+  renderPresets(); draw();
+}
+function openSettings(){
+  if(st.started && !st.paused) pause();
+  setInputs('a',tc.a); setInputs('b',tc.diff?tc.b:tc.a); $('diff').checked=tc.diff; $('bBox').hidden=!tc.diff;
+  renderTexts(); $('sheet').classList.add('open');
+}
+$('setBtn').onclick=openSettings;
+$('presets').onclick=e=>{
+  const b=e.target.closest('.preset'); if(!b) return; const p=PRESETS[b.dataset.k];
+  $('diff').checked=false; $('bBox').hidden=true;
+  setInputs('a',{base:p.m*60000,inc:p.i*1000}); setInputs('b',{base:p.m*60000,inc:p.i*1000}); renderTexts();
+};
+['aMin','aSec','aInc'].forEach(id=>$(id).addEventListener('input',renderPresets));
+$('diff').onchange=()=>{ $('bBox').hidden=!$('diff').checked; if($('diff').checked) setInputs('b',readInputs('a')); renderTexts(); };
+$('langs').onclick=e=>{
+  const b=e.target.closest('.lang'); if(!b) return; LANG=b.dataset.lang;
+  const s=LS.get('scopa-settings',{}); s.lang=LANG; LS.set('scopa-settings',s); renderTexts();
+};
+$('cancelBtn').onclick=()=>$('sheet').classList.remove('open');
+$('applyBtn').onclick=()=>{
+  const a=readInputs('a'), diff=$('diff').checked;
+  tc={a, b:diff?readInputs('b'):a, diff}; LS.set('schachuhr-tc',tc);
+  $('sheet').classList.remove('open'); fresh(); wake(false); draw();
+};
+
+renderTexts();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
